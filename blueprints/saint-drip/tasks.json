@@ -56,7 +56,7 @@
       "apps/backend/src/lib/__tests__/env.unit.spec.ts",
       "apps/backend/integration-tests/http/store-setup.spec.ts"
     ],
-    "status": "pending"
+    "status": "done"
   },
   {
     "id": "E1-T3",
