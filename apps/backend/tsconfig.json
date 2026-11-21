@@ -32,7 +32,6 @@
     ".medusa/server",
     ".medusa/admin",
     ".cache",
-    "eslint.config.*",
-    "src/scripts/seed-demo-products.ts"
+    "eslint.config.*"
   ]
 }
