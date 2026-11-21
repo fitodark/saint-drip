@@ -145,7 +145,7 @@
       "e2e/helpers/admin.ts",
       "e2e/carga-masiva.spec.ts"
     ],
-    "status": "pending"
+    "status": "done"
   },
   {
     "id": "E2-T1",
