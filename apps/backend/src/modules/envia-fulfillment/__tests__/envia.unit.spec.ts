@@ -59,6 +59,22 @@ describe("EnviaFulfillmentService", () => {
     expect(resultado.data).toEqual(expect.objectContaining({ tracking: "MOCK123456", carrier: "mock" }))
   })
 
+  it("D9: express con un item sin metadata en el contexto consulta el producto y lo bloquea", async () => {
+    const buscarMetadata = jest.fn().mockResolvedValue({ prod_perfume: { solo_terrestre: true } })
+    const servicio = new EnviaFulfillmentService({}, MOCK, { buscarMetadata })
+    // Forma real del contexto de Medusa 2.23: items.variant.product trae id, sin metadata.
+    const itemReal = { quantity: 1, product_id: "prod_perfume", variant: { weight: 450, length: 12, width: 8, height: 8, product: { id: "prod_perfume" } } }
+
+    await expect(servicio.calculatePrice({ id: "envia-express" }, {}, contexto([itemReal]))).rejects.toThrow(
+      MENSAJE_SOLO_TERRESTRE
+    )
+    expect(buscarMetadata).toHaveBeenCalledWith(["prod_perfume"])
+    await expect(servicio.calculatePrice({ id: "envia-terrestre" }, {}, contexto([itemReal]))).resolves.toEqual({
+      calculated_amount: 149,
+      is_calculated_price_tax_inclusive: true,
+    })
+  })
+
   it("production sin token lanza ENVIA_API_TOKEN no configurado", async () => {
     const servicio = new EnviaFulfillmentService({}, { environment: "production", origenCp: "69000" })
 

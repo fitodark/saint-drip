@@ -30,14 +30,40 @@ const TIPO_POR_OPCION: Record<string, TipoEnvio> = { "envia-terrestre": "terrest
 
 export const MENSAJE_SOLO_TERRESTRE = "Este pedido contiene productos que solo pueden enviarse por tierra"
 
+// Busca la metadata de productos por id. Desviación D9: Medusa 2.23 no incluye la metadata del producto
+// en el contexto de calculatePrice (cartFieldsForCalculateShippingOptionsPrices), así que se consulta aparte.
+export type BuscarMetadataProductos = (productIds: string[]) => Promise<Record<string, Record<string, unknown> | null>>
+
+type Knex = (tabla: string) => {
+  select(...cols: string[]): { whereIn(col: string, vals: string[]): { whereNull(col: string): Promise<{ id: string; metadata: unknown }[]> } }
+}
+
+// Lee de la tabla product por la conexión compartida (__pg_connection__) que Medusa registra en el contenedor
+// de cada módulo, porque un proveedor de fulfillment no puede resolver el módulo de productos.
+export const metadataDesdePg =
+  (container: Record<string, unknown>): BuscarMetadataProductos =>
+  async (productIds) => {
+    const pg = container["__pg_connection__"] as Knex | undefined
+    if (!pg || productIds.length === 0) return {}
+    const filas = await pg("product").select("id", "metadata").whereIn("id", productIds).whereNull("deleted_at")
+    const porId: Record<string, Record<string, unknown> | null> = {}
+    for (const f of filas) {
+      const m = typeof f.metadata === "string" ? JSON.parse(f.metadata) : f.metadata
+      porId[f.id] = (m as Record<string, unknown> | null) ?? null
+    }
+    return porId
+  }
+
 type ItemContexto = {
   quantity?: unknown
+  product_id?: string | null
+  product?: { id?: string | null } | null
   variant?: {
     weight?: number | null
     length?: number | null
     width?: number | null
     height?: number | null
-    product?: { metadata?: Record<string, unknown> | null } | null
+    product?: { id?: string | null; metadata?: Record<string, unknown> | null } | null
   } | null
 }
 
@@ -46,10 +72,16 @@ class EnviaFulfillmentService extends AbstractFulfillmentProviderService {
 
   protected readonly options_: EnviaOptions
   protected readonly gateway_?: EnviaGateway
+  protected readonly buscarMetadata_: BuscarMetadataProductos
 
-  constructor(container: Record<string, unknown>, options: EnviaOptions, deps?: { gateway?: EnviaGateway }) {
+  constructor(
+    container: Record<string, unknown>,
+    options: EnviaOptions,
+    deps?: { gateway?: EnviaGateway; buscarMetadata?: BuscarMetadataProductos }
+  ) {
     super()
     this.options_ = options
+    this.buscarMetadata_ = deps?.buscarMetadata ?? metadataDesdePg(container)
     if (deps?.gateway) {
       this.gateway_ = deps.gateway
     } else if (options.environment === "mock") {
@@ -68,6 +100,23 @@ class EnviaFulfillmentService extends AbstractFulfillmentProviderService {
     const tipo = TIPO_POR_OPCION[String(data?.id ?? "")]
     if (!tipo) throw new MedusaError(MedusaError.Types.INVALID_DATA, `Opción de envío Envia desconocida: ${data?.id}`)
     return tipo
+  }
+
+  // true si algún item es solo_terrestre: primero la metadata del contexto (lo que pide el blueprint) y,
+  // para los items que no la traen, la metadata consultada por product_id (D9).
+  private async haySoloTerrestre(items: ItemContexto[]): Promise<boolean> {
+    if (items.some((i) => i.variant?.product?.metadata?.solo_terrestre === true)) return true
+    const sinMetadata = items.filter((i) => !i.variant?.product?.metadata)
+    const ids = [
+      ...new Set(
+        sinMetadata
+          .map((i) => i.variant?.product?.id ?? i.product?.id ?? i.product_id)
+          .filter((id): id is string => typeof id === "string" && id !== "")
+      ),
+    ]
+    if (ids.length === 0) return false
+    const porId = await this.buscarMetadata_(ids)
+    return ids.some((id) => porId[id]?.solo_terrestre === true)
   }
 
   // Un solo paquete: peso total en kg, el mayor largo y ancho y la suma de las alturas.
@@ -125,7 +174,7 @@ class EnviaFulfillmentService extends AbstractFulfillmentProviderService {
     const tipo = this.tipo(optionData)
     const items = (context?.items ?? []) as unknown as ItemContexto[]
 
-    if (tipo === "express" && items.some((i) => i.variant?.product?.metadata?.solo_terrestre === true)) {
+    if (tipo === "express" && (await this.haySoloTerrestre(items))) {
       throw new MedusaError(MedusaError.Types.NOT_ALLOWED, MENSAJE_SOLO_TERRESTRE)
     }
 
