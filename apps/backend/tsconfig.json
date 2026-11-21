@@ -17,7 +17,8 @@
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "checkJs": false,
-    "strictNullChecks": true
+    "strictNullChecks": true,
+    "types": ["jest", "node"]
   },
   "ts-node": {
     "swc": true
@@ -32,5 +33,6 @@
     ".medusa/admin",
     ".cache",
     "eslint.config.*",
+    "src/scripts/seed-demo-products.ts"
   ]
 }
