@@ -87,7 +87,7 @@
       "apps/backend/src/lib/catalog-import/photos.ts",
       "apps/backend/src/lib/catalog-import/__tests__/catalog-import.unit.spec.ts"
     ],
-    "status": "pending"
+    "status": "done"
   },
   {
     "id": "E1-T4",
