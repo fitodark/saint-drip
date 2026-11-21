@@ -106,7 +106,16 @@ export default defineConfig({
     },
     {
       resolve: "@medusajs/medusa/fulfillment",
-      options: { providers: [{ resolve: "@medusajs/medusa/fulfillment-manual", id: "manual" }] },
+      options: {
+        providers: [
+          { resolve: "@medusajs/medusa/fulfillment-manual", id: "manual" },
+          {
+            resolve: "./src/modules/envia-fulfillment",
+            id: "envia",
+            options: { environment: process.env.ENVIA_ENVIRONMENT ?? "mock", token: process.env.ENVIA_API_TOKEN, origenCp: "69000" },
+          },
+        ],
+      },
     },
   ],
 })

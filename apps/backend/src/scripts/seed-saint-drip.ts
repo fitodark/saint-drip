@@ -192,7 +192,7 @@ export default async function seedSaintDrip({ container }: ExecArgs) {
         [Modules.FULFILLMENT]: { fulfillment_provider_id: SEED.enviaProviderId },
       })
     }
-    const existing = (await fulfillmentService.listShippingOptions({ fulfillment_set_id: fulfillmentSet.id })).filter(
+    const existing = (await fulfillmentService.listShippingOptions({})).filter(
       (e) => e.provider_id === SEED.enviaProviderId
     )
     for (const option of SEED.enviaOptions) {

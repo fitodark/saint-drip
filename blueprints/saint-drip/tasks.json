@@ -236,7 +236,7 @@
       "apps/backend/src/modules/envia-fulfillment/__tests__/envia.unit.spec.ts",
       "apps/backend/medusa-config.ts"
     ],
-    "status": "pending"
+    "status": "done"
   },
   {
     "id": "E2-T4",
