@@ -15,5 +15,10 @@ export default defineMiddlewares({
         }),
       ],
     },
+    {
+      matcher: '/admin/catalog-import/*',
+      method: ['POST'],
+      bodyParser: { sizeLimit: '8mb' },
+    },
   ],
 })
