@@ -1,0 +1,17 @@
+# Saint Drip — root ignore file. Delivered by the workspace copy BEFORE the first commit (blueprint §10).
+node_modules/
+.env
+.env.local
+.env.*.local
+!.env.example
+!.env.test
+.medusa/
+.next/
+dist/
+build/
+coverage/
+playwright-report/
+test-results/
+.scaffold-tmp/
+*.log
+.DS_Store

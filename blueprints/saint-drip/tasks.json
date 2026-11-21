@@ -1,0 +1,541 @@
+[
+  {
+    "id": "E1-T1",
+    "title": "Paso 1: Arranque verificable del backend",
+    "epic": "01-fundacion-catalogo",
+    "dependencies": [],
+    "priority": "p0",
+    "acceptance": [
+      "WHEN Bootstrap ha terminado THE SYSTEM SHALL tener `apps/backend/medusa-config.ts`, `apps/backend/src/scripts/seed-saint-drip.ts` y `apps/storefront/package.json` en disco.",
+      "WHEN `npm --prefix apps/backend run typecheck` corre THE SYSTEM SHALL salir con 0, incluido el seed emitido por el workspace.",
+      "WHEN `npm --prefix apps/backend run test:integration:http -- integration-tests/http/health.spec.ts` corre THE SYSTEM SHALL pasar con `GET /health` → 200 sobre una base temporal.",
+      "WHEN el seed corre por segunda vez THE SYSTEM SHALL salir con 0 y dejar exactamente 1 región llamada \"México\".",
+      "WHEN `npm --prefix apps/backend run dev` arranca THE SYSTEM SHALL responder `OK` en `http://localhost:9000/health` en menos de 240 s."
+    ],
+    "verify": [
+      "test -f apps/backend/medusa-config.ts && test -f apps/backend/src/scripts/seed-saint-drip.ts && test -f apps/storefront/package.json",
+      "npm --prefix apps/backend run typecheck",
+      "npm --prefix apps/backend run test:integration:http -- integration-tests/http/health.spec.ts",
+      "npm --prefix apps/backend run seed",
+      "test \"$(docker compose exec -T postgres psql -U medusa -d saint_drip -tAc \"select count(*) from region where name = 'México' and deleted_at is null\")\" = 1",
+      "node scripts/with-server.mjs \"npm --prefix apps/backend run dev\" http://localhost:9000/health OK 240"
+    ],
+    "checkpoint": "step-01-arranque",
+    "files": [
+      "apps/backend/integration-tests/http/health.spec.ts"
+    ],
+    "status": "pending"
+  },
+  {
+    "id": "E1-T2",
+    "title": "Paso 2: Configuración de Medusa y validación de entorno",
+    "epic": "01-fundacion-catalogo",
+    "dependencies": [
+      "E1-T1"
+    ],
+    "priority": "p0",
+    "acceptance": [
+      "WHEN `missingProductionEnv({})` se evalúa THE SYSTEM SHALL incluir `STRIPE_API_KEY` y `SPEI_MODE`, y con el entorno completo devolver `[]` (test unitario).",
+      "WHEN el seed corre dos veces sobre una base temporal THE SYSTEM SHALL dejar exactamente 1 región \"México\" en `mxn`, las 5 categorías, 1 almacén, 1 admin y 1 llave publicable.",
+      "WHEN `npm --prefix apps/backend run build` corre THE SYSTEM SHALL salir con 0 y producir `apps/backend/.medusa/server`.",
+      "WHEN el dev server arranca con `REDIS_URL` definido THE SYSTEM SHALL responder `OK` en `/health` (los módulos Redis cargan).",
+      "WHEN `NODE_ENV` no es `production` THE SYSTEM SHALL arrancar sin las variables de producción (el gate del paso 1 sigue verde)."
+    ],
+    "verify": [
+      "npm --prefix apps/backend run typecheck",
+      "npm --prefix apps/backend run test:unit -- src/lib/__tests__/env.unit.spec.ts",
+      "npm --prefix apps/backend run test:integration:http -- integration-tests/http/store-setup.spec.ts",
+      "npm --prefix apps/backend run build && test -d apps/backend/.medusa/server",
+      "node scripts/with-server.mjs \"npm --prefix apps/backend run dev\" http://localhost:9000/health OK 240",
+      "npm --prefix apps/backend run test:integration:http -- integration-tests/http/health.spec.ts"
+    ],
+    "checkpoint": "step-02-config",
+    "files": [
+      "apps/backend/medusa-config.ts",
+      "apps/backend/src/lib/env.ts",
+      "apps/backend/src/lib/__tests__/env.unit.spec.ts",
+      "apps/backend/integration-tests/http/store-setup.spec.ts"
+    ],
+    "status": "pending"
+  },
+  {
+    "id": "E1-T3",
+    "title": "Paso 3: Librería de carga masiva (Excel + fotos)",
+    "epic": "01-fundacion-catalogo",
+    "dependencies": [
+      "E1-T1"
+    ],
+    "priority": "p0",
+    "acceptance": [
+      "WHEN `validarCatalogo` procesa `plantilla-valida.xlsx` THE SYSTEM SHALL devolver cero errores y 3 productos con 8 variantes.",
+      "WHEN `validarCatalogo` procesa `plantilla-con-errores.xlsx` THE SYSTEM SHALL devolver exactamente las 6 tripletas `(fila, columna, codigo)` listadas, en ese orden.",
+      "WHEN un handle ya existe en la tienda THE SYSTEM SHALL marcar `E_HANDLE_EXISTE` en cada fila de ese handle.",
+      "WHEN `emparejarFotos` recibe nombres desordenados y una foto ajena THE SYSTEM SHALL ordenar por `n`, listar el handle sin fotos en `faltantes` y la ajena en `sinUsar`.",
+      "WHEN `buildPlantilla()` se lee de vuelta con `leerExcel` THE SYSTEM SHALL tener encabezados idénticos a `COLUMNAS` y cero filas."
+    ],
+    "verify": [
+      "npm --prefix apps/backend run test:unit -- src/lib/catalog-import",
+      "status=0; grep -rnE '\\.(skip|only)\\(' apps/backend/src/lib/catalog-import || status=$?; test \"$status\" -eq 1",
+      "status=0; grep -rn '@medusajs/' apps/backend/src/lib/catalog-import --include=*.ts || status=$?; test \"$status\" -eq 1",
+      "npm --prefix apps/backend run typecheck"
+    ],
+    "checkpoint": "step-03-carga-lib",
+    "files": [
+      "apps/backend/src/lib/catalog-import/columns.ts",
+      "apps/backend/src/lib/catalog-import/parse.ts",
+      "apps/backend/src/lib/catalog-import/validate.ts",
+      "apps/backend/src/lib/catalog-import/photos.ts",
+      "apps/backend/src/lib/catalog-import/__tests__/catalog-import.unit.spec.ts"
+    ],
+    "status": "pending"
+  },
+  {
+    "id": "E1-T4",
+    "title": "Paso 4: API y workflow de importación",
+    "epic": "01-fundacion-catalogo",
+    "dependencies": [
+      "E1-T2",
+      "E1-T3"
+    ],
+    "priority": "p0",
+    "acceptance": [
+      "WHEN un admin hace `POST /admin/catalog-import/validar` con el fixture válido y sus 4 fotos THE SYSTEM SHALL responder 200 `{ valido: true, productos: 3, variantes: 8, fotos_faltantes: [] }` sin escribir filas.",
+      "WHEN el admin hace `POST /admin/catalog-import/importar` con ese cuerpo THE SYSTEM SHALL responder 200 `{ creados: 3 }` y crear la variante `SD-HOOD-NEG-M` con existencia 8 y precio 1299 MXN.",
+      "WHEN se repite el mismo `importar` THE SYSTEM SHALL responder 422 con `E_HANDLE_EXISTE` y dejar exactamente 3 productos con esos handles.",
+      "WHEN se pide `GET /admin/catalog-import/plantilla` THE SYSTEM SHALL responder 200 con `Content-Disposition: attachment; filename=\"plantilla-catalogo-saint-drip.xlsx\"`.",
+      "WHEN se llama `validar` sin sesión de admin THE SYSTEM SHALL responder 401."
+    ],
+    "verify": [
+      "npm --prefix apps/backend run typecheck",
+      "npm --prefix apps/backend run test:integration:http -- integration-tests/http/catalog-import.spec.ts",
+      "npm --prefix apps/backend run test:unit -- src/lib/catalog-import"
+    ],
+    "checkpoint": "step-04-carga-api",
+    "files": [
+      "apps/backend/src/workflows/import-catalog.ts",
+      "apps/backend/src/api/admin/catalog-import/[accion]/route.ts",
+      "apps/backend/src/api/middlewares.ts",
+      "apps/backend/integration-tests/http/catalog-import.spec.ts"
+    ],
+    "status": "pending"
+  },
+  {
+    "id": "E1-T5",
+    "title": "Paso 5: Página \"Carga masiva\" en el admin",
+    "epic": "01-fundacion-catalogo",
+    "dependencies": [
+      "E1-T4"
+    ],
+    "priority": "p0",
+    "acceptance": [
+      "WHEN `npm --prefix apps/backend run build` corre THE SYSTEM SHALL compilar el admin con la ruta `carga-masiva` y salir con 0.",
+      "WHEN el admin pulsa `Descargar plantilla` THE SYSTEM SHALL descargar `plantilla-catalogo-saint-drip.xlsx`.",
+      "WHEN se valida `plantilla-con-errores.xlsx` THE SYSTEM SHALL mostrar 6 filas en la tabla Fila/Columna/Error y mantener `Importar` deshabilitado.",
+      "WHEN se valida e importa el fixture válido con sus 4 fotos THE SYSTEM SHALL mostrar `3 productos · 8 variantes` y luego `3 productos creados`, y el hoodie SHALL tener 2 imágenes."
+    ],
+    "verify": [
+      "npm --prefix apps/backend run build",
+      "npm --prefix apps/backend run typecheck",
+      "npm run test:e2e -- e2e/carga-masiva.spec.ts"
+    ],
+    "checkpoint": "step-05-carga-admin",
+    "files": [
+      "apps/backend/src/admin/lib/sdk.ts",
+      "apps/backend/src/admin/routes/carga-masiva/page.tsx",
+      "e2e/helpers/admin.ts",
+      "e2e/carga-masiva.spec.ts"
+    ],
+    "status": "pending"
+  },
+  {
+    "id": "E2-T1",
+    "title": "Paso 6: Proveedor de pago SPEI",
+    "epic": "02-pagos-envios-facturacion",
+    "dependencies": [
+      "E1-T2"
+    ],
+    "priority": "p0",
+    "acceptance": [
+      "WHEN `initiatePayment` recibe 1448 MXN en modo live THE SYSTEM SHALL crear el PaymentIntent con `amount: 144800`, `mx_bank_transfer` y devolver CLABE, banco y referencia (test unitario).",
+      "WHEN llega un webhook `payment_intent.succeeded` con firma válida THE SYSTEM SHALL devolver la acción `captured` con `amount: 1448`; con firma inválida, `failed`.",
+      "WHEN se intenta capturar un PI que no está `succeeded` THE SYSTEM SHALL lanzar `NOT_ALLOWED`.",
+      "WHEN el seed corre después de registrar el proveedor THE SYSTEM SHALL ofrecer `pp_spei_spei` en la región México por la Store API."
+    ],
+    "verify": [
+      "npm --prefix apps/backend run test:unit -- src/modules/spei-payment",
+      "npm --prefix apps/backend run typecheck",
+      "npm --prefix apps/backend run seed",
+      "node scripts/with-server.mjs \"npm --prefix apps/backend run dev\" http://localhost:9000/health OK 240 -- node scripts/store-check.mjs payment-provider pp_spei_spei"
+    ],
+    "checkpoint": "step-06-spei",
+    "files": [
+      "apps/backend/src/modules/spei-payment/service.ts",
+      "apps/backend/src/modules/spei-payment/index.ts",
+      "apps/backend/src/modules/spei-payment/__tests__/spei.unit.spec.ts",
+      "apps/backend/medusa-config.ts"
+    ],
+    "status": "pending"
+  },
+  {
+    "id": "E2-T2",
+    "title": "Paso 7: Proveedor de pago PayPal",
+    "epic": "02-pagos-envios-facturacion",
+    "dependencies": [
+      "E1-T2"
+    ],
+    "priority": "p0",
+    "acceptance": [
+      "WHEN `initiatePayment` recibe 1448 THE SYSTEM SHALL crear la orden de PayPal con el valor `\"1448.00\"` MXN.",
+      "WHEN la orden está `APPROVED` THE SYSTEM SHALL capturarla y devolver `captured`; WHEN está `CREATED` THE SYSTEM SHALL devolver `pending`.",
+      "WHEN llega un webhook cuya firma PayPal no verifica THE SYSTEM SHALL devolver `failed` sin capturar.",
+      "WHEN el seed corre THE SYSTEM SHALL ofrecer `pp_paypal_paypal` en la región México."
+    ],
+    "verify": [
+      "npm --prefix apps/backend run test:unit -- src/modules/paypal-payment",
+      "npm --prefix apps/backend run typecheck",
+      "npm --prefix apps/backend run seed",
+      "node scripts/with-server.mjs \"npm --prefix apps/backend run dev\" http://localhost:9000/health OK 240 -- node scripts/store-check.mjs payment-provider pp_paypal_paypal",
+      "npm --prefix apps/backend run test:unit -- src/modules/spei-payment"
+    ],
+    "checkpoint": "step-07-paypal",
+    "files": [
+      "apps/backend/src/modules/paypal-payment/gateway.ts",
+      "apps/backend/src/modules/paypal-payment/service.ts",
+      "apps/backend/src/modules/paypal-payment/index.ts",
+      "apps/backend/src/modules/paypal-payment/__tests__/paypal.unit.spec.ts",
+      "apps/backend/medusa-config.ts"
+    ],
+    "status": "pending"
+  },
+  {
+    "id": "E2-T3",
+    "title": "Paso 8: Proveedor de envíos Envia.com",
+    "epic": "02-pagos-envios-facturacion",
+    "dependencies": [
+      "E1-T2"
+    ],
+    "priority": "p0",
+    "acceptance": [
+      "WHEN se cotiza terrestre en modo mock THE SYSTEM SHALL devolver 149 MXN IVA incluido.",
+      "WHEN el carrito tiene un producto `solo_terrestre` y se cotiza express THE SYSTEM SHALL lanzar \"Este pedido contiene productos que solo pueden enviarse por tierra\".",
+      "WHEN Envia devuelve varias tarifas terrestres THE SYSTEM SHALL elegir la más barata (180 entre 210/180/199).",
+      "WHEN se genera el fulfillment THE SYSTEM SHALL devolver una etiqueta con número de rastreo.",
+      "WHEN el seed corre con el proveedor registrado THE SYSTEM SHALL exponer \"Envío terrestre\" como opción de envío para un carrito de la región México."
+    ],
+    "verify": [
+      "npm --prefix apps/backend run test:unit -- src/modules/envia-fulfillment",
+      "npm --prefix apps/backend run typecheck",
+      "npm --prefix apps/backend run seed",
+      "node scripts/with-server.mjs \"npm --prefix apps/backend run dev\" http://localhost:9000/health OK 240 -- node scripts/store-check.mjs shipping-option \"Envío terrestre\""
+    ],
+    "checkpoint": "step-08-envia",
+    "files": [
+      "apps/backend/src/modules/envia-fulfillment/gateway.ts",
+      "apps/backend/src/modules/envia-fulfillment/service.ts",
+      "apps/backend/src/modules/envia-fulfillment/index.ts",
+      "apps/backend/src/modules/envia-fulfillment/__tests__/envia.unit.spec.ts",
+      "apps/backend/medusa-config.ts"
+    ],
+    "status": "pending"
+  },
+  {
+    "id": "E2-T4",
+    "title": "Paso 9: Módulo CFDI (modelo y gateway FacturAPI)",
+    "epic": "02-pagos-envios-facturacion",
+    "dependencies": [
+      "E1-T2"
+    ],
+    "priority": "p0",
+    "acceptance": [
+      "WHEN `npm --prefix apps/backend run db:migrate` corre THE SYSTEM SHALL salir con 0 y la tabla `cfdi_invoice` SHALL existir.",
+      "WHEN se inspecciona `cfdi_invoice` THE SYSTEM SHALL tener los índices únicos parciales sobre `order_id` y `period`.",
+      "WHEN `npm --prefix apps/backend run build` corre THE SYSTEM SHALL salir con 0 con el módulo registrado."
+    ],
+    "verify": [
+      "test -n \"$(ls apps/backend/src/modules/facturapi/migrations/*.ts 2>/dev/null)\"",
+      "npm --prefix apps/backend run db:migrate",
+      "test \"$(docker compose exec -T postgres psql -U medusa -d saint_drip -tAc \"select to_regclass('public.cfdi_invoice') is not null\")\" = t",
+      "test \"$(docker compose exec -T postgres psql -U medusa -d saint_drip -tAc \"select count(*) from pg_indexes where tablename = 'cfdi_invoice' and indexdef like '%UNIQUE%' and (indexdef like '%(order_id)%' or indexdef like '%(period)%')\")\" = 2",
+      "npm --prefix apps/backend run typecheck && npm --prefix apps/backend run build"
+    ],
+    "checkpoint": "step-09-cfdi-modulo",
+    "files": [
+      "apps/backend/src/modules/facturapi/models/cfdi-invoice.ts",
+      "apps/backend/src/modules/facturapi/gateway.ts",
+      "apps/backend/src/modules/facturapi/service.ts",
+      "apps/backend/src/modules/facturapi/index.ts",
+      "apps/backend/medusa-config.ts",
+      "apps/backend/src/modules/facturapi/migrations/*"
+    ],
+    "status": "pending"
+  },
+  {
+    "id": "E2-T5",
+    "title": "Paso 10: Solicitud de factura del cliente",
+    "epic": "02-pagos-envios-facturacion",
+    "dependencies": [
+      "E2-T1",
+      "E2-T4"
+    ],
+    "priority": "p0",
+    "acceptance": [
+      "WHEN el dueño de un pedido pagado del mes solicita su CFDI THE SYSTEM SHALL responder 201 con el uuid y guardar exactamente 1 `cfdi_invoice` con `kind='individual'`.",
+      "WHEN se solicita por segunda vez THE SYSTEM SHALL responder 409 `E_YA_FACTURADO`.",
+      "WHEN otro cliente lo solicita THE SYSTEM SHALL responder 403 `E_NO_ES_TU_PEDIDO`.",
+      "WHEN el pago no está capturado THE SYSTEM SHALL responder 422 `E_PAGO_PENDIENTE`.",
+      "WHEN la petición no está autenticada THE SYSTEM SHALL responder 401."
+    ],
+    "verify": [
+      "npm --prefix apps/backend run typecheck",
+      "npm --prefix apps/backend run test:integration:http -- integration-tests/http/invoices.spec.ts",
+      "npm --prefix apps/backend run test:integration:http -- integration-tests/http/catalog-import.spec.ts"
+    ],
+    "checkpoint": "step-10-cfdi-solicitud",
+    "files": [
+      "apps/backend/src/lib/cfdi/reglas.ts",
+      "apps/backend/src/api/store/invoices/route.ts",
+      "apps/backend/src/api/store/invoices/[id]/pdf/route.ts",
+      "apps/backend/src/api/middlewares.ts",
+      "apps/backend/integration-tests/http/invoices.spec.ts"
+    ],
+    "status": "pending"
+  },
+  {
+    "id": "E2-T6",
+    "title": "Paso 11: Factura global mensual automática",
+    "epic": "02-pagos-envios-facturacion",
+    "dependencies": [
+      "E2-T5"
+    ],
+    "priority": "p0",
+    "acceptance": [
+      "WHEN `periodoDe` recibe `2026-12-01T05:30:00Z` THE SYSTEM SHALL devolver `2026-11` (hora de Ciudad de México).",
+      "WHEN `periodoAnterior` corre el 1 de enero de 2027 THE SYSTEM SHALL devolver `2026-12`, mes `12`, año 2026.",
+      "WHEN `construirFacturaGlobal` recibe cero pedidos THE SYSTEM SHALL devolver `null` (el job no timbra nada).",
+      "WHEN recibe 2 pedidos THE SYSTEM SHALL producir un CFDI a `XAXX010101000` con 2 conceptos y periodicidad mensual.",
+      "WHEN `npm --prefix apps/backend run build` corre THE SYSTEM SHALL incluir el job `factura-global` y salir con 0."
+    ],
+    "verify": [
+      "npm --prefix apps/backend run test:unit -- src/lib/cfdi",
+      "npm --prefix apps/backend run typecheck && npm --prefix apps/backend run build",
+      "grep -q '\"0 9 1 \\* \\*\"' apps/backend/src/jobs/factura-global.ts"
+    ],
+    "checkpoint": "step-11-cfdi-global",
+    "files": [
+      "apps/backend/src/lib/cfdi/reglas.ts",
+      "apps/backend/src/jobs/factura-global.ts",
+      "apps/backend/src/lib/cfdi/__tests__/reglas.unit.spec.ts"
+    ],
+    "status": "pending"
+  },
+  {
+    "id": "E2-T7",
+    "title": "Paso 12: Correos transaccionales con Resend",
+    "epic": "02-pagos-envios-facturacion",
+    "dependencies": [
+      "E1-T2"
+    ],
+    "priority": "p0",
+    "acceptance": [
+      "WHEN se arma la confirmación de un pedido de 1448 MXN THE SYSTEM SHALL incluir `$1,448.00`, el link al pedido y el asunto con el número de pedido.",
+      "WHEN el pedido es SPEI THE SYSTEM SHALL incluir CLABE y referencia; WHEN no lo es THE SYSTEM SHALL omitir la palabra CLABE.",
+      "WHEN se arma el correo de envío THE SYSTEM SHALL incluir número de rastreo y URL de rastreo.",
+      "WHEN `RESEND_API_KEY` no está definido THE SYSTEM SHALL usar el proveedor local y el backend SHALL arrancar (el gate de `/health` sigue verde)."
+    ],
+    "verify": [
+      "npm --prefix apps/backend run test:unit -- src/lib/emails",
+      "npm --prefix apps/backend run typecheck",
+      "node scripts/with-server.mjs \"npm --prefix apps/backend run dev\" http://localhost:9000/health OK 240"
+    ],
+    "checkpoint": "step-12-correos",
+    "files": [
+      "apps/backend/src/lib/emails/templates.ts",
+      "apps/backend/src/modules/resend-notification/service.ts",
+      "apps/backend/src/modules/resend-notification/index.ts",
+      "apps/backend/medusa-config.ts",
+      "apps/backend/src/lib/emails/__tests__/templates.unit.spec.ts"
+    ],
+    "status": "pending"
+  },
+  {
+    "id": "E2-T8",
+    "title": "Paso 13: Suscriptores de pedido y envío",
+    "epic": "02-pagos-envios-facturacion",
+    "dependencies": [
+      "E2-T7"
+    ],
+    "priority": "p0",
+    "acceptance": [
+      "WHEN se emite `order.placed` para un pedido SPEI THE SYSTEM SHALL enviar exactamente 1 notificación por el canal `email` con plantilla `confirmacion-pedido` que contiene la CLABE.",
+      "WHEN el pedido se pagó con tarjeta THE SYSTEM SHALL enviar la confirmación sin bloque SPEI.",
+      "WHEN se emite `shipment.created` THE SYSTEM SHALL enviar `envio-generado` con el número de rastreo de la etiqueta."
+    ],
+    "verify": [
+      "npm --prefix apps/backend run test:unit -- src/subscribers",
+      "npm --prefix apps/backend run typecheck && npm --prefix apps/backend run build"
+    ],
+    "checkpoint": "step-13-suscriptores",
+    "files": [
+      "apps/backend/src/subscribers/order-placed.ts",
+      "apps/backend/src/subscribers/shipment-created.ts",
+      "apps/backend/src/subscribers/__tests__/subscribers.unit.spec.ts"
+    ],
+    "status": "pending"
+  },
+  {
+    "id": "E3-T1",
+    "title": "Paso 14: Sistema de diseño en el storefront",
+    "epic": "03-tienda-lanzamiento",
+    "dependencies": [
+      "E1-T1"
+    ],
+    "priority": "p0",
+    "acceptance": [
+      "WHEN `node apps/storefront/scripts/check-tokens.mjs` corre THE SYSTEM SHALL salir con 0 (cero hex fuera de `globals.css`).",
+      "WHEN se construye el storefront con el backend arriba THE SYSTEM SHALL salir con 0.",
+      "WHEN se pide `/mx` THE SYSTEM SHALL servir un HTML con `lang=\"es-MX\"` y un enlace `https://wa.me/529531720664` con `aria-label` \"¿Dudas? Escríbenos por WhatsApp\".",
+      "WHEN `npm --prefix apps/storefront run typecheck` corre THE SYSTEM SHALL salir con 0."
+    ],
+    "verify": [
+      "node apps/storefront/scripts/check-tokens.mjs",
+      "npm --prefix apps/storefront run typecheck",
+      "node scripts/with-server.mjs \"npm --prefix apps/backend run dev\" http://localhost:9000/health OK 240 -- npm --prefix apps/storefront run build",
+      "node scripts/with-server.mjs \"npm --prefix apps/backend run dev\" http://localhost:9000/health OK 240 -- node scripts/with-server.mjs \"npm --prefix apps/storefront run dev\" http://localhost:8000/mx 'lang=\"es-MX\"' 300 -- node scripts/store-check.mjs html /mx https://wa.me/529531720664"
+    ],
+    "checkpoint": "step-14-diseno",
+    "files": [
+      "apps/storefront/src/styles/globals.css",
+      "apps/storefront/tailwind.config.js",
+      "apps/storefront/src/app/layout.tsx",
+      "apps/storefront/src/modules/common/components/whatsapp-button/index.tsx",
+      "apps/storefront/scripts/check-tokens.mjs"
+    ],
+    "status": "pending"
+  },
+  {
+    "id": "E3-T2",
+    "title": "Paso 15: Inicio por categorías, PDP con JSON-LD y accesibili",
+    "epic": "03-tienda-lanzamiento",
+    "dependencies": [
+      "E1-T5",
+      "E2-T3",
+      "E3-T1"
+    ],
+    "priority": "p0",
+    "acceptance": [
+      "WHEN se pide el PDP del hoodie sin JavaScript THE SYSTEM SHALL contener `$1,299.00` en el HTML y un JSON-LD `Product` con `offers.price` `\"1299.00\"` en `MXN`.",
+      "WHEN se pide `/mx` THE SYSTEM SHALL mostrar una sección por categoría con productos publicados (ROPA y TENIS con el fixture) y omitir las vacías.",
+      "WHEN un producto tiene `metadata.solo_terrestre = true` THE SYSTEM SHALL mostrar \"Solo envío terrestre\" en su PDP.",
+      "WHEN axe analiza `/mx`, `/mx/store` y el PDP con las etiquetas WCAG 2.2 AA THE SYSTEM SHALL reportar 0 violaciones."
+    ],
+    "verify": [
+      "npm --prefix apps/storefront run typecheck",
+      "node apps/storefront/scripts/check-tokens.mjs",
+      "npm run test:e2e -- e2e/catalogo.spec.ts e2e/a11y.spec.ts"
+    ],
+    "checkpoint": "step-15-catalogo",
+    "files": [
+      "apps/storefront/src/modules/home/components/category-rails/index.tsx",
+      "apps/storefront/src/app/[countryCode]/(main)/page.tsx",
+      "apps/storefront/src/modules/products/templates/index.tsx",
+      "e2e/catalogo.spec.ts",
+      "e2e/a11y.spec.ts"
+    ],
+    "status": "pending"
+  },
+  {
+    "id": "E3-T3",
+    "title": "Paso 16: Checkout México: SPEI, PayPal, tarjeta y Envia",
+    "epic": "03-tienda-lanzamiento",
+    "dependencies": [
+      "E2-T1",
+      "E2-T2",
+      "E2-T3",
+      "E3-T2"
+    ],
+    "priority": "p0",
+    "acceptance": [
+      "WHEN un invitado compra el hoodie M con Envío terrestre y SPEI (mock) THE SYSTEM SHALL crear el pedido y mostrar en la confirmación la CLABE `000000000000000001` y el total `$1,448.00`.",
+      "WHEN el carrito contiene un producto `solo_terrestre` THE SYSTEM SHALL ofrecer \"Envío terrestre\" y no \"Envío express\".",
+      "WHEN el paso de pago carga THE SYSTEM SHALL listar \"Tarjeta de crédito o débito\" (si `STRIPE_API_KEY` está definido), \"Transferencia SPEI\" y \"PayPal\".",
+      "WHEN `npm --prefix apps/storefront run typecheck` corre THE SYSTEM SHALL salir con 0."
+    ],
+    "verify": [
+      "npm --prefix apps/storefront run typecheck",
+      "node apps/storefront/scripts/check-tokens.mjs",
+      "npm run test:e2e -- e2e/checkout-spei.spec.ts",
+      "npm run test:e2e -- e2e/catalogo.spec.ts"
+    ],
+    "checkpoint": "step-16-checkout",
+    "files": [
+      "apps/storefront/src/lib/constants.tsx",
+      "apps/storefront/src/modules/checkout/components/payment-button/index.tsx",
+      "apps/storefront/src/modules/order/templates/order-completed-template.tsx",
+      "apps/storefront/src/modules/checkout/components/shipping/index.tsx",
+      "e2e/checkout-spei.spec.ts"
+    ],
+    "status": "pending"
+  },
+  {
+    "id": "E3-T4",
+    "title": "Paso 17: Cuenta: solicitar factura",
+    "epic": "03-tienda-lanzamiento",
+    "dependencies": [
+      "E2-T5",
+      "E3-T3"
+    ],
+    "priority": "p1",
+    "acceptance": [
+      "WHEN un cliente registrado guarda una dirección THE SYSTEM SHALL listarla en `/mx/account/addresses`.",
+      "WHEN el cliente abre el detalle de su pedido pagado y envía el formulario THE SYSTEM SHALL mostrar `Factura emitida` con el uuid devuelto por FacturAPI (mock).",
+      "WHEN el cliente vuelve a enviarlo THE SYSTEM SHALL mostrar el mensaje de factura ya emitida en un `role=\"alert\"`.",
+      "WHEN `npm --prefix apps/storefront run typecheck` corre THE SYSTEM SHALL salir con 0."
+    ],
+    "verify": [
+      "npm --prefix apps/storefront run typecheck",
+      "npm run test:e2e -- e2e/cuenta-factura.spec.ts",
+      "npm run test:e2e -- e2e/checkout-spei.spec.ts"
+    ],
+    "checkpoint": "step-17-cuenta",
+    "files": [
+      "apps/storefront/src/modules/order/components/invoice-request/index.tsx",
+      "apps/storefront/src/modules/order/templates/order-details-template.tsx",
+      "e2e/cuenta-factura.spec.ts",
+      "e2e/helpers/admin.ts"
+    ],
+    "status": "pending"
+  },
+  {
+    "id": "E3-T5",
+    "title": "Paso 18: Endurecimiento: Sentry, vencimiento SPEI, conciliac",
+    "epic": "03-tienda-lanzamiento",
+    "dependencies": [
+      "E2-T1",
+      "E2-T8"
+    ],
+    "priority": "p1",
+    "acceptance": [
+      "WHEN un pago SPEI no capturado tiene `vence_en` en el pasado THE SYSTEM SHALL incluir su pedido en `speiVencidos`; WHEN está capturado o no vencido THE SYSTEM SHALL excluirlo.",
+      "WHEN un pedido con tarjeta lleva más de 1 h sin pago capturado THE SYSTEM SHALL reportarlo en `pedidosSinPago`.",
+      "WHEN `SENTRY_DSN` no está definido THE SYSTEM SHALL arrancar sin inicializar Sentry (el `/health` sigue OK).",
+      "WHEN el gate global de §20.1 corre en local THE SYSTEM SHALL salir con 0 en cada línea."
+    ],
+    "verify": [
+      "npm --prefix apps/backend run test:unit -- src/lib/__tests__/reconciliacion.unit.spec.ts",
+      "npm --prefix apps/backend run typecheck && npm --prefix apps/backend run build",
+      "test -f .github/workflows/ci.yml && grep -q 'postgres:17.9-alpine' .github/workflows/ci.yml",
+      "npm --prefix apps/backend run test:unit",
+      "npm --prefix apps/backend run test:integration:http",
+      "npm run test:e2e"
+    ],
+    "checkpoint": "step-18-endurecimiento",
+    "files": [
+      "apps/backend/instrumentation.ts",
+      "apps/backend/src/lib/reconciliacion.ts",
+      "apps/backend/src/jobs/cancelar-spei-vencidos.ts",
+      "apps/backend/src/lib/__tests__/reconciliacion.unit.spec.ts",
+      ".github/workflows/ci.yml"
+    ],
+    "status": "pending"
+  }
+]
