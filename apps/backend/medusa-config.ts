@@ -81,6 +81,16 @@ export default defineConfig({
                 },
               ]
             : []),
+          {
+            resolve: "./src/modules/spei-payment",
+            id: "spei",
+            options: {
+              mode: process.env.SPEI_MODE === "live" ? "live" : "mock",
+              apiKey: process.env.STRIPE_API_KEY,
+              webhookSecret: process.env.SPEI_WEBHOOK_SECRET,
+              expiresHours: 72,
+            },
+          },
         ],
       },
     },
