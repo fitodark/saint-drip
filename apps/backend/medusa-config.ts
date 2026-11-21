@@ -91,6 +91,16 @@ export default defineConfig({
               expiresHours: 72,
             },
           },
+          {
+            resolve: "./src/modules/paypal-payment",
+            id: "paypal",
+            options: {
+              environment: process.env.PAYPAL_ENVIRONMENT ?? "mock",
+              clientId: process.env.PAYPAL_CLIENT_ID,
+              clientSecret: process.env.PAYPAL_CLIENT_SECRET,
+              webhookId: process.env.PAYPAL_WEBHOOK_ID,
+            },
+          },
         ],
       },
     },
