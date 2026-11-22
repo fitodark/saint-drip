@@ -18,6 +18,10 @@
   --color-destructive: #B91C30;
   --color-success: #17803F;
   --radius: 0px;
+
+  /* a11y (paso 15): el gris muted de @medusajs/ui (#71717A) no llega a 4.5:1 sobre --color-background;
+     los componentes del starter que usan text-ui-fg-muted toman el token de §7 (4.86:1). */
+  --fg-muted: var(--color-fg-muted);
 }
 
 @media (prefers-reduced-motion: reduce) {

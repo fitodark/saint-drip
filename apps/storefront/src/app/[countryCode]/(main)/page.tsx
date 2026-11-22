@@ -1,8 +1,7 @@
 import { Metadata } from "next"
 
-import FeaturedProducts from "@modules/home/components/featured-products"
-import Hero from "@modules/home/components/hero"
-import { listCollections } from "@lib/data/collections"
+import CategoryRails from "@modules/home/components/category-rails"
+import LocalizedClientLink from "@modules/common/components/localized-client-link"
 import { getRegion, listRegions } from "@lib/data/regions"
 import { toJsonLd } from "@lib/util/product-structured-data"
 import { getSiteOrigin, listCountryCodes, STORE_NAME } from "@lib/util/site"
@@ -45,11 +44,7 @@ export default async function Home(props: {
 
   const region = await getRegion(countryCode)
 
-  const { collections } = await listCollections({
-    fields: "id, handle, title",
-  })
-
-  if (!collections || !region) {
+  if (!region) {
     return null
   }
 
@@ -88,12 +83,20 @@ export default async function Home(props: {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: toJsonLd(structuredData) }}
       />
-      <Hero />
-      <div className="py-12">
-        <ul className="flex flex-col gap-x-6">
-          <FeaturedProducts collections={collections} region={region} />
-        </ul>
-      </div>
+      <section className="border-b border-border bg-surface">
+        <div className="content-container flex flex-col items-start gap-y-6 py-16 small:py-24">
+          <h1 className="font-display text-4xl font-extrabold uppercase leading-none tracking-[0.04em] small:text-5xl">
+            Exclusividad en cada prenda
+          </h1>
+          <LocalizedClientLink
+            href="/store"
+            className="bg-primary px-6 py-3 text-sm font-medium uppercase tracking-[0.06em] text-primary-fg transition-colors duration-[120ms] ease-out hover:bg-fg-muted"
+          >
+            Ver catálogo
+          </LocalizedClientLink>
+        </div>
+      </section>
+      <CategoryRails countryCode={countryCode} />
     </>
   )
 }

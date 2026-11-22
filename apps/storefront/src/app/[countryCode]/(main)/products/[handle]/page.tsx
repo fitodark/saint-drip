@@ -5,11 +5,8 @@ import { getRegion, listRegions } from "@lib/data/regions"
 import ProductTemplate from "@modules/products/templates"
 import { HttpTypes } from "@medusajs/types"
 import { isVariantInStock } from "@lib/util/inventory"
-import {
-  buildProductStructuredData,
-  getPricedVariants,
-  toJsonLd,
-} from "@lib/util/product-structured-data"
+
+import { getPricedVariants } from "@lib/util/product-structured-data"
 import { getSiteOrigin, listCountryCodes, STORE_NAME } from "@lib/util/site"
 
 type Props = {
@@ -120,21 +117,10 @@ export default async function ProductPage(props: Props) {
     notFound()
   }
 
-  const origin = await getSiteOrigin()
-  const structuredData = buildProductStructuredData({
-    product: pricedProduct,
-    region,
-    countryCode: params.countryCode,
-    productUrl: `${origin}/${params.countryCode}/products/${pricedProduct.handle}`,
-  })
-
   return (
     <>
       <ProductMetaTags product={pricedProduct} region={region} />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: toJsonLd(structuredData) }}
-      />
+      {/* D12: el JSON-LD del producto lo emite solo ProductTemplate (paso 15); este ProductGroup del starter se quitó. */}
       <ProductTemplate
         product={pricedProduct}
         region={region}
