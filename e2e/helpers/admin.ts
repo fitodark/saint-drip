@@ -93,17 +93,3 @@ export async function importarFixture(request: APIRequestContext): Promise<{ cre
   if (!respuesta.ok()) throw new Error(`importar falló: ${respuesta.status()} ${await respuesta.text()}`)
   return respuesta.json()
 }
-
-// Paso 17: captura el pago de un pedido por la Admin API (equivale a confirmar la transferencia SPEI).
-export async function capturarPagoDelPedido(request: APIRequestContext, orderId: string): Promise<void> {
-  const headers = { Authorization: `Bearer ${await tokenAdmin(request)}` }
-  const detalle = await request.get(`${BACKEND_URL}/admin/orders/${orderId}?fields=payment_collections.payments.id`, {
-    headers,
-  })
-  if (!detalle.ok()) throw new Error(`GET /admin/orders/${orderId} falló: ${detalle.status()} ${await detalle.text()}`)
-  const { order } = await detalle.json()
-  const pagoId: string | undefined = order.payment_collections?.[0]?.payments?.[0]?.id
-  if (!pagoId) throw new Error(`El pedido ${orderId} no tiene pagos`)
-  const captura = await request.post(`${BACKEND_URL}/admin/payments/${pagoId}/capture`, { headers, data: {} })
-  if (!captura.ok()) throw new Error(`POST /admin/payments/${pagoId}/capture falló: ${captura.status()} ${await captura.text()}`)
-}

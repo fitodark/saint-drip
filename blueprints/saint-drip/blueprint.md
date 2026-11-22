@@ -3,7 +3,7 @@
 > Generado por The Architect el 2026-11-21
 > Shape: E-commerce Storefront · `knowledge/shapes/ecommerce-storefront.md`
 > Runtime track: TypeScript / Node.js · `knowledge/runtime-tracks/ts-node.md` (con desviaciones documentadas en §20.3)
-> Emission mode: bundle (18 pasos)
+> Emission mode: bundle (20 pasos)
 > Blueprint version: 1
 > Versions last verified: 2026-11-21 (/architect-refresh con stack-researcher en vivo) — ver §11 para la procedencia de cada paquete
 
@@ -61,7 +61,7 @@ defect — stop and report it rather than expanding scope.
 |---|---|---|
 | Pedidos pagados en línea | ≥ 50/mes al tercer mes de lanzamiento | `select count(*) from "order" o join order_payment_collection opc on opc.order_id=o.id join payment_collection pc on pc.id=opc.payment_collection_id where pc.status='completed' and o.created_at >= date_trunc('month', now())` |
 | Conversión checkout iniciado → pedido | ≥ 45 % | Carritos con `email` no nulo frente a pedidos creados en el mes (consulta en §16) |
-| Pedidos SPEI vencidos sin pago | ≤ 20 % de los SPEI | Job `cancelar-spei-vencidos` (paso 18) registra cada cancelación en el log `spei.vencido` |
+| Pedidos SPEI vencidos sin pago | ≤ 20 % de los SPEI | Job `cancelar-spei-vencidos` (paso 20) registra cada cancelación en el log `spei.vencido` |
 | Ventas sin CFDI al cierre de mes | 0 | Job `factura-global` (paso 11) registra `facturas_globales` en el log y en la tabla `cfdi_invoice` |
 
 ---
@@ -127,15 +127,16 @@ saint-drip/                                   # raíz del proyecto = raíz del r
     fixtures/fotos/*.jpg                      # workspace — 4 JPG de prueba nombrados {handle}-{n}.jpg
     helpers/admin.ts                          # paso 5 — sesión de admin, borrar/importar productos del fixture
     carga-masiva.spec.ts                      # paso 5
-    a11y.spec.ts                              # paso 15
+    a11y.spec.ts                              # paso 17
+    cache-catalogo.spec.ts                    # paso 16
     catalogo.spec.ts                          # paso 15
-    checkout-spei.spec.ts                     # paso 16
-    cuenta-factura.spec.ts                    # paso 17
-  .github/workflows/ci.yml                    # paso 18
+    checkout-spei.spec.ts                     # paso 18
+    cuenta-factura.spec.ts                    # paso 19
+  .github/workflows/ci.yml                    # paso 20
   apps/
     backend/                                  # Medusa 2.23.0 (scaffold create-medusa-app)
       medusa-config.ts                        # scaffold; reescrito completo en paso 2; editado en 6,7,8,9,12
-      instrumentation.ts                      # scaffold; reemplazado en paso 18 — Sentry
+      instrumentation.ts                      # scaffold; reemplazado en paso 20 — Sentry
       jest.config.js                          # workspace
       tsconfig.json                           # workspace — types jest/node y exclude src/admin (§19.6)
       .env.example  .env.test  .gitignore     # workspace
@@ -144,7 +145,7 @@ saint-drip/                                   # raíz del proyecto = raíz del r
         health.spec.ts                        # paso 1
         store-setup.spec.ts                   # paso 2
         catalog-import.spec.ts                # paso 4
-        invoices.spec.ts                      # paso 10
+        invoices.spec.ts                      # paso 10; editado en 13 (correo factura-emitida)
       src/
         scripts/seed-saint-drip.ts            # workspace — configuración idempotente de la tienda
         scripts/print-publishable-key.ts      # workspace
@@ -157,7 +158,7 @@ saint-drip/                                   # raíz del proyecto = raíz del r
         workflows/import-catalog.ts           # paso 4
         api/middlewares.ts                    # scaffold (configura /store/search); editado en pasos 4 y 10
         api/admin/catalog-import/[accion]/route.ts   # paso 4
-        api/store/invoices/route.ts           # paso 10
+        api/store/invoices/route.ts           # paso 10; editado en 13 (correo factura-emitida)
         api/store/invoices/[id]/pdf/route.ts  # paso 10
         admin/tsconfig.json                   # scaffold — lo usa el script typecheck (tsc -p src/admin/tsconfig.json)
         admin/lib/sdk.ts                      # paso 5
@@ -175,26 +176,33 @@ saint-drip/                                   # raíz del proyecto = raíz del r
         subscribers/order-placed.ts           # paso 13
         subscribers/shipment-created.ts       # paso 13
         subscribers/__tests__/subscribers.unit.spec.ts   # paso 13
-        jobs/cancelar-spei-vencidos.ts        # paso 18
-        lib/reconciliacion.ts                 # paso 18
-        lib/__tests__/reconciliacion.unit.spec.ts   # paso 18
+        jobs/cancelar-spei-vencidos.ts        # paso 20
+        lib/reconciliacion.ts                 # paso 20
+        lib/__tests__/reconciliacion.unit.spec.ts   # paso 20
     storefront/                               # Next.js Starter de Medusa (scaffold --with-nextjs-starter)
       .env.example  .gitignore                # workspace
+      AGENTS.md  CLAUDE.md                    # los genera `next dev` (Next 16) y los vuelve a crear; se commitean tal cual
       scripts/check-tokens.mjs                # paso 14
       tailwind.config.js                      # scaffold; editado en paso 14
-      src/styles/globals.css                  # scaffold; editado en paso 14
+      src/styles/globals.css                  # scaffold; editado en pasos 14 y 17 (--fg-muted)
       src/app/layout.tsx                      # scaffold; editado en paso 14
       src/modules/common/components/whatsapp-button/index.tsx   # paso 14
       src/app/[countryCode]/(main)/page.tsx   # scaffold; reescrito en paso 15
       src/modules/home/components/category-rails/index.tsx      # paso 15
       src/modules/products/templates/index.tsx                  # scaffold; editado en paso 15 (JSON-LD + insignia)
-      src/lib/constants.tsx                   # scaffold; editado en paso 16
-      src/modules/checkout/components/payment-button/index.tsx  # scaffold; editado en paso 16 (SPEI + PayPal)
-      src/modules/checkout/components/shipping/index.tsx        # scaffold; editado en paso 16 (oculta opciones que fallan)
-      src/modules/order/templates/order-completed-template.tsx  # scaffold; editado en paso 16 (instrucciones SPEI)
-      src/modules/order/components/invoice-request/index.tsx    # paso 17
-      src/lib/data/invoices.ts                # paso 17 — server action solicitarFactura (fetch; ver §20.3 #17)
-      src/modules/order/templates/order-details-template.tsx    # scaffold; editado en paso 17
+      src/app/[countryCode]/(main)/products/[handle]/page.tsx   # scaffold; editado en paso 15 (sin el JSON-LD ProductGroup)
+      src/lib/data/products.ts  src/lib/data/categories.ts      # scaffold; editados en paso 16 (revalidate 60)
+      src/modules/layout/components/medusa-cta/index.tsx        # scaffold; editado en paso 17 (aria-label)
+      src/modules/layout/components/cart-dropdown/index.tsx     # scaffold; editado en paso 17 (sin PopoverButton)
+      src/modules/products/components/product-tabs/accordion.tsx  # scaffold; editado en paso 17 (aria-label)
+      src/lib/constants.tsx                   # scaffold; editado en paso 18
+      src/modules/checkout/components/payment-button/index.tsx  # scaffold; editado en paso 18 (SPEI + PayPal)
+      src/modules/checkout/components/shipping/index.tsx        # scaffold; editado en paso 18 (oculta opciones que fallan)
+      src/modules/order/templates/order-completed-template.tsx  # scaffold; editado en paso 18 (instrucciones SPEI)
+      src/modules/order/components/invoice-request/index.tsx    # paso 19
+      src/lib/data/invoices.ts                # paso 19 — server action solicitarFactura (fetch; ver §20.3 #17)
+      src/app/api/invoices/[id]/pdf/route.ts  # paso 19 — proxy del PDF del CFDI (reenvía la sesión del cliente)
+      src/modules/order/templates/order-details-template.tsx    # scaffold; editado en paso 19
   blueprints/saint-drip/                      # este bundle (se commitea; ninguna herramienta lo recorre — §19.6)
 ```
 
@@ -302,7 +310,7 @@ objeto. La tabla de §4 lo describe como lista: esa lista es la propiedad `ids`.
 ### Seed data
 `apps/backend/src/scripts/seed-saint-drip.ts` (emitido en el workspace, idempotente) crea:
 - el canal de venta "Tienda en línea";
-- la tienda en MXN;
+- la tienda en MXN, con la moneda marcada `is_tax_inclusive: true`. Los precios de la carga masiva se crean por `currency_code`, sin regla de región, así que Medusa usa la preferencia de la moneda y no la de la región;
 - la región "México" (`mxn`, país `mx`, IVA incluido) y la región fiscal MX con IVA 16 %;
 - el almacén "Almacén Principal" (Huajuapan de León, CP 69000);
 - el perfil de envío, el fulfillment set "Envíos México" con la zona "Toda la República";
@@ -312,7 +320,7 @@ objeto. La tabla de §4 lo describe como lista: esa lista es la propiedad `ids`.
 - el admin `admin@saintdrip.local` (contraseña `SEED_ADMIN_PASSWORD`).
 
 También sincroniza los proveedores de pago de la región con todos los proveedores registrados. Comando:
-`npm --prefix apps/backend run seed`. **No crea productos**: el catálogo entra por la carga masiva.
+`npm --prefix apps/backend run seed`. **No crea productos**: el catálogo entra por la carga masiva. Los scripts demo del scaffold (`src/migration-scripts/initial-data-seed.ts` y `src/scripts/seed-demo-products.ts`) no se copian (`merge-scaffold.mjs`), así que `db:migrate` no siembra la región Europe ni productos de ejemplo.
 
 ---
 
@@ -403,7 +411,7 @@ va a `fotos_sin_usar`. `valido` es `true` solo si `errores` y `fotos_faltantes` 
   - 422 `E_PAGO_PENDIENTE`: el pago no está capturado.
   - 422 `E_FUERA_DE_PERIODO`: el pedido no es del mes calendario en curso (America/Mexico_City), porque ya entró o entrará a la global.
   - 502 `E_PAC`: FacturAPI rechazó; el `mensaje` trae el texto de FacturAPI.
-- Efectos: timbra con FacturAPI (`FACTURAPI_MODE=mock` devuelve un uuid fijo `00000000-0000-4000-8000-000000000001`), inserta `cfdi_invoice` con kind `individual` y envía el correo "factura emitida".
+- Efectos: timbra con FacturAPI (`FACTURAPI_MODE=mock` devuelve un uuid fijo `00000000-0000-4000-8000-000000000001`), inserta `cfdi_invoice` con kind `individual` y envía el correo "factura emitida". El envío se agrega en el paso 13, cuando ya existe la plantilla del paso 12.
 
 #### Webhook SPEI `POST /hooks/payment/spei_spei`
 - Firma: `stripe.webhooks.constructEvent(rawBody, headers["stripe-signature"], SPEI_WEBHOOK_SECRET)`. Si falla, la acción es `failed` y no hay cambios.
@@ -427,9 +435,9 @@ va a `fotos_sin_usar`. `valido` es `true` solo si `errores` y `fotos_faltantes` 
 | `/mx/account` (+ `/addresses`, `/orders`, `/orders/details/[id]`) | Cuenta: direcciones, historial y "Solicitar factura" | dinámico | customer |
 
 ### Rendering strategy
-Es la del starter y no se cambia:
+Es la del starter, con un solo ajuste (la vida de la caché de catálogo, abajo):
 - Las páginas de catálogo (inicio, PLP y PDP) se renderizan en servidor con la caché de datos de Next y
-  etiquetas por recurso (`next: { tags }` en `src/lib/data/*`). La revalidación es la del starter.
+  etiquetas por recurso (`next: { tags }` en `src/lib/data/*`). La revalidación es la del starter, más `next.revalidate = 60` en los fetch de catálogo de `src/lib/data/*` (paso 16). Sin eso, `force-cache` sin tags los guarda un año.
 - Carrito, checkout, cuenta y confirmación leen cookies (`_medusa_cart_id`, `_medusa_jwt`) y por lo
   tanto son dinámicas. **Nunca** se cachean.
 - Precio y disponibilidad salen en el HTML del servidor, y la prueba con JavaScript desactivado (paso 15) lo comprueba.
@@ -602,9 +610,9 @@ antes del paso.
 previo.
 
 ### One step, one unit — the counting rule
-18 pasos = 18 tareas en `tasks.json` = 18 bloques en `epics/`. Las épicas son
+20 pasos = 20 tareas en `tasks.json` = 20 bloques en `epics/`. Las épicas son
 `01-fundacion-catalogo` (pasos 1–5), `02-pagos-envios-facturacion` (pasos 6–13) y
-`03-tienda-lanzamiento` (pasos 14–18).
+`03-tienda-lanzamiento` (pasos 14–20). El paso 15 original se dividió en 15, 16 y 17 para respetar la regla 1; sus tareas nuevas son E3-T6 y E3-T7 (los ids no se renumeran).
 
 ### Step map
 | # | Step | Depends on | Touches | Gate |
@@ -621,12 +629,14 @@ previo.
 | 10 | Solicitud de factura del cliente | 6, 9 | reglas, 2 rutas, middlewares, test | 201 / 409 / 403 / 422 |
 | 11 | Factura global mensual automática | 10 | job, reglas, test | factura global idempotente por periodo |
 | 12 | Correos transaccionales con Resend | 2 | `modules/resend-notification/*`, plantillas | plantillas con total y links |
-| 13 | Suscriptores de pedido y envío | 12 | 2 subscribers + test | envían la plantilla correcta |
+| 13 | Suscriptores de pedido y envío | 10, 12 | 2 subscribers + test, correo factura-emitida en `/store/invoices` | envían la plantilla correcta y la factura avisa por correo |
 | 14 | Sistema de diseño en el storefront | 1 | tailwind, globals, layout, WhatsApp, check-tokens | build + cero hex fuera de tokens |
-| 15 | Inicio por categorías, PDP con JSON-LD, a11y | 5, 8, 14 | página de inicio, carriles, JSON-LD, 2 E2E | precio en HTML sin JS + 0 violaciones axe |
-| 16 | Checkout México: SPEI, PayPal, tarjeta, Envia | 6, 7, 8, 15 | constants, payment-button, PayPal, instrucciones SPEI, E2E | pedido SPEI muestra CLABE y total $1,448.00 |
-| 17 | Cuenta: solicitar factura | 10, 16 | invoice-request, server action `lib/data/invoices.ts`, order-details, E2E | cliente obtiene el UUID en la UI |
-| 18 | Endurecimiento: Sentry, vencimiento SPEI, conciliación, CI | 6, 13 | instrumentation, job, reconciliación, test, CI | gate global §20.1 |
+| 15 | Inicio por categorías y PDP con JSON-LD | 5, 8, 14 | página de inicio, carriles, JSON-LD, PDP del starter, E2E | precio en HTML sin JS + un solo JSON-LD |
+| 16 | Caché de catálogo de 60 s | 15 | `lib/data/products.ts`, `lib/data/categories.ts`, E2E de caché | un cambio del admin se ve en el PDP en ≤ 90 s |
+| 17 | Accesibilidad WCAG 2.2 AA | 15 | globals, medusa-cta, cart-dropdown, accordion, E2E axe | 0 violaciones axe |
+| 18 | Checkout México: SPEI, PayPal, tarjeta, Envia | 6, 7, 8, 15, 16 | constants, payment-button, PayPal, instrucciones SPEI, E2E | pedido SPEI muestra CLABE y total $1,448.00 |
+| 19 | Cuenta: solicitar factura | 10, 18 | invoice-request, server action `lib/data/invoices.ts`, proxy del PDF, order-details, E2E | cliente obtiene el UUID en la UI |
+| 20 | Endurecimiento: Sentry, vencimiento SPEI, conciliación, CI | 6, 13, 17, 19 | instrumentation, job, reconciliación, test, CI | gate global §20.1 |
 
 ---
 
@@ -949,8 +959,8 @@ git tag step-04-carga-api
   - **Emparejado de fotos:** reutiliza `emparejarFotos` importado de `../../../lib/catalog-import/photos` para avisar antes de validar.
 - `e2e/helpers/admin.ts`:
   - `iniciarSesionAdmin(page)`: `POST http://localhost:9000/auth/user/emailpass` con `admin@saintdrip.local` / `saintdrip-dev` y luego `POST http://localhost:9000/auth/session` con `Authorization: Bearer <token>` usando `page.request`, que comparte las cookies con la página.
-  - `borrarProductosFixture(request)`: con el token, `GET /admin/products?handle=<h>` y `DELETE /admin/products/:id` para cada handle del fixture.
-  - `importarFixture(request)`: sube las 4 fotos de `e2e/fixtures/fotos/` por `POST /admin/uploads` (multipart `files`) y llama `POST /admin/catalog-import/importar` con `e2e/fixtures/plantilla-valida.xlsx`. Lo reutilizan los pasos 15–17.
+  - `borrarProductosFixture(request)`: con el token, `GET /admin/products?handle=<h>` y `DELETE /admin/products/:id` para cada handle del fixture. Antes de cada `DELETE`, libera las reservas de inventario de sus variantes. Para eso hace `GET /admin/products/:id?fields=id,variants.inventory_items.inventory_item_id`, luego `GET /admin/reservations?inventory_item_id=<id>` y por último `DELETE /admin/reservations/:id`. Hace falta porque los pedidos de prueba de los pasos 18 y 19 dejan reservas, y Medusa rechaza borrar un producto que las tiene (400 `Cannot remove following inventory item(s) since they have reservations`).
+  - `importarFixture(request)`: sube las 4 fotos de `e2e/fixtures/fotos/` por `POST /admin/uploads` (multipart `files`) y llama `POST /admin/catalog-import/importar` con `e2e/fixtures/plantilla-valida.xlsx`. Lo reutilizan los pasos 15–19.
 - `e2e/carga-masiva.spec.ts`:
   - `beforeAll` llama `borrarProductosFixture`. Después: iniciar sesión, ir a `http://localhost:9000/app/carga-masiva` y comprobar que la descarga de `Descargar plantilla` se llama `plantilla-catalogo-saint-drip.xlsx`.
   - **Archivo con errores:** cargar `apps/backend/src/lib/catalog-import/__fixtures__/plantilla-con-errores.xlsx`, pulsar `Validar` y esperar 6 filas en la tabla de errores.
@@ -1089,6 +1099,7 @@ git tag step-07-paypal
   - **`canCalculate`:** devuelve `true`.
   - **`calculatePrice(optionData, data, context)`:**
     - Si `optionData.id === "envia-express"` y algún `context.items[].variant.product.metadata.solo_terrestre === true`, lanza `MedusaError(NOT_ALLOWED, "Este pedido contiene productos que solo pueden enviarse por tierra")`.
+    - Medusa 2.23 arma ese `context` con `cartFieldsForCalculateShippingOptionsPrices`, que trae `items.variant.product.id` pero **no** la `metadata` del producto. Para los items que no la traen, el servicio la busca por `product_id` con una función inyectable `buscarMetadata(productIds)` (`deps.buscarMetadata`, tercer parámetro del constructor). La implementación por defecto lee `product.id, product.metadata` por la conexión `__pg_connection__` que Medusa registra en el contenedor del módulo, porque un proveedor de fulfillment no puede resolver el módulo de productos. Solo consulta cuando se cotiza express.
     - Si no, cotiza un paquete: peso = suma de `variant.weight × quantity` en kg, y medidas = máximo de largo y ancho y suma de alto.
     - Elige la tarifa más barata del `tipo` pedido y devuelve `{ calculated_amount: total, is_calculated_price_tax_inclusive: true }`.
     - Si no hay tarifas de ese tipo, lanza `MedusaError(NOT_FOUND, "Sin tarifas de Envia para este código postal")`.
@@ -1096,12 +1107,13 @@ git tag step-07-paypal
   - **`createFulfillment`:** `generarGuia` → `{ data: { tracking, carrier }, labels: [{ tracking_number, tracking_url, label_url }] }`.
   - **`cancelFulfillment`:** `cancelarGuia`.
 - `apps/backend/src/modules/envia-fulfillment/index.ts`: `ModuleProvider(Modules.FULFILLMENT, { services: [EnviaFulfillmentService] })`.
-- `apps/backend/src/modules/envia-fulfillment/__tests__/envia.unit.spec.ts`, 5 casos:
+- `apps/backend/src/modules/envia-fulfillment/__tests__/envia.unit.spec.ts`, 6 casos:
   1. En `mock`, terrestre → 149.
   2. Express con un item `solo_terrestre` → lanza el mensaje exacto.
   3. Con un gateway doble que devuelve 3 tarifas terrestres (210, 180, 199) → 180.
   4. `createFulfillment` → `labels[0].tracking_number === "MOCK123456"`.
   5. `production` sin token → lanza `ENVIA_API_TOKEN no configurado`.
+  6. Express con un item en la forma real del contexto (`variant.product.id` sin `metadata`) y un `buscarMetadata` doble que lo marca `solo_terrestre` → lanza el mensaje exacto. El mismo item con terrestre → 149.
 - `apps/backend/medusa-config.ts`: agrega en `fulfillment.options.providers` `{ resolve: "./src/modules/envia-fulfillment", id: "envia", options: { environment: process.env.ENVIA_ENVIRONMENT ?? "mock", token: process.env.ENVIA_API_TOKEN, origenCp: "69000" } }`.
 
 **Done when**
@@ -1113,7 +1125,7 @@ git tag step-07-paypal
 
 **Verify**
 ```bash
-npm --prefix apps/backend run test:unit -- src/modules/envia-fulfillment           # expect: exit 0, 5 passed
+npm --prefix apps/backend run test:unit -- src/modules/envia-fulfillment           # expect: exit 0, 6 passed
 npm --prefix apps/backend run typecheck                                            # expect: exit 0
 npm --prefix apps/backend run seed                                                 # expect: exit 0 — crea las 2 opciones de envío
 node scripts/with-server.mjs "npm --prefix apps/backend run dev" http://localhost:9000/health OK 240 -- node scripts/store-check.mjs shipping-option "Envío terrestre"   # expect: exit 0
@@ -1133,7 +1145,7 @@ git tag step-08-envia
 - `apps/backend/src/modules/facturapi/models/cfdi-invoice.ts`: exactamente el schema de §4.
 - `apps/backend/src/modules/facturapi/gateway.ts`: `export interface FacturapiGateway { timbrar(cfdi: CfdiEntrada): Promise<{ id: string; uuid: string; total: number }>; pdf(id: string): Promise<Buffer> }`, donde `CfdiEntrada = { receptor: { rfc; razon_social; regimen_fiscal; codigo_postal }; uso_cfdi: string; items: { descripcion: string; precio: number; cantidad: number }[]; global?: { periodicidad: "month"; mes: string; anio: number } }`. Los precios llevan IVA 16 % incluido.
   - **`crearFacturapiGateway(key)`** usa `new Facturapi(key)` y `facturapi.invoices.create`, con customer `{ legal_name, tax_id, tax_system, address: { zip } }`, `use`, `items: [{ quantity, product: { description, product_key: "01010101", price, tax_included: true } }]`, `payment_form: "03"` y el campo `global` cuando aplica. `pdf` usa `facturapi.invoices.downloadPdf`.
-  - **`crearFacturapiGatewayMock()`:** devuelve `{ id: "facturapi_mock_<n>", uuid: "00000000-0000-4000-8000-000000000001", total }` y un PDF de 4 bytes `%PDF`.
+  - **`crearFacturapiGatewayMock()`:** devuelve `{ id: "facturapi_mock_<marca de tiempo del arranque del proceso>_<n>", uuid: "00000000-0000-4000-8000-000000000001", total }` y un PDF de 4 bytes `%PDF`. El id no se repite entre reinicios del backend, porque `facturapi_id` es único en `cfdi_invoice`.
 - `apps/backend/src/modules/facturapi/service.ts`: `class FacturapiModuleService extends MedusaService({ CfdiInvoice })`. El constructor lee las opciones `{ mode, key }` y elige el gateway. Expone `gateway()`.
 - `apps/backend/src/modules/facturapi/index.ts`: `export const FACTURAPI_MODULE = "facturapi"; export default Module(FACTURAPI_MODULE, { service: FacturapiModuleService })`.
 - `apps/backend/medusa-config.ts`: agrega en `modules` `{ resolve: "./src/modules/facturapi", options: { mode: process.env.FACTURAPI_MODE === "live" ? "live" : "mock", key: process.env.FACTURAPI_KEY } }`.
@@ -1172,7 +1184,7 @@ git tag step-09-cfdi-modulo
   - Lee el pedido con `query.graph({ entity: "order", fields: ["id","customer_id","created_at","total","items.title","items.quantity","items.total","payment_collections.status"], filters: { id } })`. `pago_capturado` = alguna `payment_collection.status` igual a `completed`.
   - Revisa si ya existe un CFDI individual del pedido y aplica `validarSolicitud`.
   - Timbra con un item por línea del pedido (`precio = item.total / item.quantity`) y guarda `cfdi_invoice` con `kind: "individual"`, `order_ids: { ids: [id] }` y `rfc`.
-  - Responde 201 `{ id, uuid }`. Un error del gateway se traduce a 502 `E_PAC`.
+  - Responde 201 `{ id, uuid }`. Un error del gateway se traduce a 502 `E_PAC`. Si el insert choca con el índice único parcial de `order_id` (dos solicitudes simultáneas), responde 409 `E_YA_FACTURADO`. Cualquier otro error de base de datos se propaga y no se disfraza de "ya facturado".
 - `apps/backend/src/api/store/invoices/[id]/pdf/route.ts`: `GET` busca la factura y comprueba que el pedido sea del cliente autenticado (si no, 403 `E_NO_ES_TU_PEDIDO`). Devuelve el PDF con `Content-Type: application/pdf`.
 - `apps/backend/src/api/middlewares.ts`: agrega al mismo arreglo `routes` la entrada `{ matcher: "/store/invoices*", middlewares: [authenticate("customer", ["session", "bearer"])] }`, con `authenticate` importado de `@medusajs/framework/http` en el import existente, junto a `configureStoreSearch` y `defineMiddlewares`. Las entradas de `/store/search` y `/admin/catalog-import/*` no cambian.
 - `apps/backend/integration-tests/http/invoices.spec.ts`:
@@ -1296,6 +1308,8 @@ git tag step-12-correos
   - Si el proveedor es `pp_spei_spei`, pasa `spei` desde `payment.data`.
   - Llama `notificationModule.createNotifications({ to: email, channel: "email", template: "confirmacion-pedido", content: confirmacionPedido({ …, urlPedido: STOREFRONT_URL + "/mx/order/" + id + "/confirmed" }) })`.
 - `apps/backend/src/subscribers/shipment-created.ts`: evento `shipment.created` con `data.id` del fulfillment. Lee el fulfillment con `labels` y su pedido, y envía `envioGenerado`.
+- `apps/backend/src/api/store/invoices/route.ts` (del paso 10): después de guardar el CFDI individual envía `createNotifications({ to: order.email, channel: "email", template: "factura-emitida", content: facturaEmitida({ display_id, uuid, urlPdf: STOREFRONT_URL + "/mx/account/orders/details/" + order.id }) })`. Para eso agrega `display_id` y `email` a los campos del `query.graph` del pedido. El enlace lleva a la página del pedido, donde el paso 19 pone "Descargar PDF", porque la ruta del PDF exige sesión de cliente. Si el envío falla, solo registra un aviso: el CFDI ya está timbrado y la respuesta sigue siendo 201.
+- `apps/backend/integration-tests/http/invoices.spec.ts` (del paso 10): el caso 1 afirma además que `notificationModule.listNotifications({ template: "factura-emitida", to })` devuelve 1 notificación por el canal `email`.
 - `apps/backend/src/subscribers/__tests__/subscribers.unit.spec.ts`. Prueba los handlers con un `container` doble cuyo `resolve` devuelve un `query.graph` falso y un `createNotifications` hecho con `jest.fn()`. 3 casos:
   1. Pedido SPEI → `createNotifications` recibe `template "confirmacion-pedido"` y un `content.html` que contiene la CLABE.
   2. Pedido con tarjeta → el html no contiene `CLABE`.
@@ -1305,10 +1319,12 @@ git tag step-12-correos
 - [ ] WHEN se emite `order.placed` para un pedido SPEI THE SYSTEM SHALL enviar exactamente 1 notificación por el canal `email` con plantilla `confirmacion-pedido` que contiene la CLABE.
 - [ ] WHEN el pedido se pagó con tarjeta THE SYSTEM SHALL enviar la confirmación sin bloque SPEI.
 - [ ] WHEN se emite `shipment.created` THE SYSTEM SHALL enviar `envio-generado` con el número de rastreo de la etiqueta.
+- [ ] WHEN se timbra un CFDI individual THE SYSTEM SHALL crear exactamente 1 notificación `factura-emitida` por el canal `email`.
 
 **Verify**
 ```bash
 npm --prefix apps/backend run test:unit -- src/subscribers                         # expect: exit 0, 3 passed
+npm --prefix apps/backend run test:integration:http -- integration-tests/http/invoices.spec.ts   # expect: exit 0, 5 passed — incluye la notificación factura-emitida
 npm --prefix apps/backend run typecheck && npm --prefix apps/backend run build     # expect: exit 0
 ```
 
@@ -1356,7 +1372,7 @@ git tag step-14-diseno
 
 ---
 
-#### Step 15 — Inicio por categorías, PDP con JSON-LD y accesibilidad
+#### Step 15 — Inicio por categorías y PDP con JSON-LD
 
 **Do**
 - `apps/storefront/src/modules/home/components/category-rails/index.tsx` (componente de servidor):
@@ -1368,35 +1384,96 @@ git tag step-14-diseno
 - `apps/storefront/src/modules/products/templates/index.tsx` (plantilla de servidor del starter) recibe dos agregados:
   - un `<script type="application/ld+json">` con `@type: "Product"`, `name`, `sku` de la primera variante, `image` (URLs), `brand: { "@type": "Brand", name: "Saint Drip" }` y `offers: { "@type": "Offer", priceCurrency: "MXN", price: <precio calculado de la variante más barata con 2 decimales, p. ej. "1299.00">, availability: "https://schema.org/InStock" si alguna variante tiene inventario, si no "https://schema.org/OutOfStock", url }`, serializado con `JSON.stringify(...).replace(/</g, "\\u003c")`;
   - la insignia "Solo envío terrestre" (`bg-accent text-fg`) cuando `product.metadata?.solo_terrestre === true`.
+- `apps/storefront/src/app/[countryCode]/(main)/products/[handle]/page.tsx` (del starter): ya publica un JSON-LD `ProductGroup` (`buildProductStructuredData` + `toJsonLd`). Quita ese bloque y conserva las meta OG y `getPricedVariants`. El único JSON-LD del producto es el de la plantilla.
 - `e2e/catalogo.spec.ts`:
   - `beforeAll`: `borrarProductosFixture` y después `importarFixture` (paso 5).
-  - Con un contexto `javaScriptEnabled: false`, `/mx/products/sd-hoodie-oversize-negro` contiene `$1,299.00` y el JSON-LD parseado tiene `offers.price === "1299.00"` y `offers.priceCurrency === "MXN"`.
+  - Con un contexto `javaScriptEnabled: false`, `/mx/products/sd-hoodie-oversize-negro` contiene `$1,299.00`. Su HTML tiene exactamente un bloque JSON-LD `Product` o `ProductGroup`, y ese bloque, una vez parseado, tiene `offers.price === "1299.00"` y `offers.priceCurrency === "MXN"`.
   - `/mx` tiene un `h2` "ROPA" y otro "TENIS" (los productos publicados; el perfume es borrador y no aparece).
   - Al publicar el perfume por la Admin API (`POST /admin/products/:id { status: "published" }`), `/mx/products/sd-perfume-noir-100` muestra "Solo envío terrestre".
-- `e2e/a11y.spec.ts`: ejecuta `new AxeBuilder({ page }).withTags(["wcag2a","wcag2aa","wcag21aa","wcag22aa"]).analyze()` sobre `/mx`, `/mx/store` y `/mx/products/sd-hoodie-oversize-negro`, y afirma `violations` = `[]` en cada una. Corrige en el storefront lo que el starter traiga mal hasta que pase.
+  - Las comprobaciones del inicio y de la insignia recargan con `expect(...).toPass({ timeout: 90_000 })`, porque los carriles y el PDP salen de la caché de catálogo, que el paso 16 deja en 60 s como máximo.
 
 **Done when**
 - [ ] WHEN se pide el PDP del hoodie sin JavaScript THE SYSTEM SHALL contener `$1,299.00` en el HTML y un JSON-LD `Product` con `offers.price` `"1299.00"` en `MXN`.
 - [ ] WHEN se pide `/mx` THE SYSTEM SHALL mostrar una sección por categoría con productos publicados (ROPA y TENIS con el fixture) y omitir las vacías.
 - [ ] WHEN un producto tiene `metadata.solo_terrestre = true` THE SYSTEM SHALL mostrar "Solo envío terrestre" en su PDP.
-- [ ] WHEN axe analiza `/mx`, `/mx/store` y el PDP con las etiquetas WCAG 2.2 AA THE SYSTEM SHALL reportar 0 violaciones.
+- [ ] WHEN se inspecciona el HTML del PDP THE SYSTEM SHALL contener exactamente un bloque JSON-LD de producto (`Product` o `ProductGroup`).
 
 **Verify**
 ```bash
 npm --prefix apps/storefront run typecheck                                         # expect: exit 0
 node apps/storefront/scripts/check-tokens.mjs                                      # expect: exit 0 — el paso 14 sigue verde
-npm run test:e2e -- e2e/catalogo.spec.ts e2e/a11y.spec.ts                          # expect: exit 0, 0 failed
+npm run test:e2e -- e2e/catalogo.spec.ts                                           # expect: exit 0, 0 failed
 ```
 
 **Checkpoint**
 ```bash
-git add -A && git commit -m "step 15: inicio por categorias, pdp y a11y"
+git add -A && git commit -m "step 15: inicio por categorias y pdp"
 git tag step-15-catalogo
 ```
 
 ---
 
-#### Step 16 — Checkout México: SPEI, PayPal, tarjeta y Envia
+#### Step 16 — Caché de catálogo de 60 s
+
+**Do**
+- Los fetch de catálogo del starter usan `cache: "force-cache"` sin `next.revalidate` y sin tags, salvo cuando existe la cookie `_medusa_cache_id`, así que Next los guarda un año (`revalidate: 31536000` en la caché de fetch). Los cambios del admin y de la carga masiva no se verían en el inicio, la PLP ni el PDP, aunque la página declare `revalidate = 60`.
+- `apps/storefront/src/lib/data/products.ts` (`"use server"`): agrega después de los imports `const CATALOGO_REVALIDATE_S = 60`, sin `export` porque un archivo `"use server"` solo exporta funciones async, y `revalidate: CATALOGO_REVALIDATE_S` al objeto `next` de `listProducts`.
+- `apps/storefront/src/lib/data/categories.ts`: la misma constante y `revalidate: CATALOGO_REVALIDATE_S` en el objeto `next` de `listCategories` y de `getCategoryByHandle`.
+- No cambies `cache`, las etiquetas ni el carrito, el checkout o la cuenta, que siguen sin caché (§6).
+- `e2e/cache-catalogo.spec.ts`: busca el hoodie (`sd-hoodie-oversize-negro`) por la Admin API e importa el fixture con `importarFixture` si no existe. Abre su PDP y espera el título original en `data-testid="product-title"`, lo que deja la página en caché. Cambia el título con `POST /admin/products/:id { title: "<original> <Date.now()>" }` y recarga el PDP dentro de `expect(...).toPass({ timeout: 90_000, intervals: [5_000] })` hasta ver el título nuevo. En un `finally` restaura el título original. `test.setTimeout(240_000)`. Sin el `revalidate`, la caché de un año sirve el título viejo y la prueba falla.
+
+**Done when**
+- [ ] WHEN se leen `products.ts` y `categories.ts` THE SYSTEM SHALL fijar `revalidate: CATALOGO_REVALIDATE_S` (60) en los tres fetch de catálogo: uno en `products.ts` y dos en `categories.ts`.
+- [ ] WHEN el título del hoodie cambia por `POST /admin/products/:id` después de que su PDP ya está en caché THE SYSTEM SHALL mostrar el título nuevo en `data-testid="product-title"` del PDP en 90 s como máximo (`e2e/cache-catalogo.spec.ts`).
+
+**Verify**
+```bash
+npm --prefix apps/storefront run typecheck                                         # expect: exit 0
+test "$(grep -c 'revalidate: CATALOGO_REVALIDATE_S' apps/storefront/src/lib/data/products.ts)" -ge 1 && test "$(grep -c 'revalidate: CATALOGO_REVALIDATE_S' apps/storefront/src/lib/data/categories.ts)" -ge 2   # expect: exit 0
+npm run test:e2e -- e2e/cache-catalogo.spec.ts                                     # expect: exit 0 — el cambio del admin llega al PDP en ≤ 90 s
+npm run test:e2e -- e2e/catalogo.spec.ts                                           # expect: exit 0 — el paso 15 sigue verde
+```
+
+**Checkpoint**
+```bash
+git add -A && git commit -m "step 16: cache de catalogo de 60 s"
+git tag step-16-cache-catalogo
+```
+
+---
+
+#### Step 17 — Accesibilidad WCAG 2.2 AA
+
+**Do**
+- `e2e/a11y.spec.ts`: en `beforeAll` importa el fixture si el hoodie no existe (corre antes que `catalogo.spec.ts` por orden alfabético). Después ejecuta `new AxeBuilder({ page }).withTags(["wcag2a","wcag2aa","wcag21aa","wcag22aa"]).analyze()` sobre `/mx`, `/mx/store` y `/mx/products/sd-hoodie-oversize-negro`, y afirma `violations` = `[]` en cada una.
+- Con el starter de `create-medusa-app` 2.23.0 hacen falta estas cuatro correcciones:
+  - `apps/storefront/src/styles/globals.css`: `--fg-muted: var(--color-fg-muted);` en el `:root`. El gris muted de `@medusajs/ui` (`#71717A`) no llega a 4.5:1 sobre `--color-background` (`color-contrast`).
+  - `apps/storefront/src/modules/layout/components/medusa-cta/index.tsx`: `aria-label="Medusa"` y `aria-label="Next.js"` en los dos enlaces de íconos (`link-name`).
+  - `apps/storefront/src/modules/layout/components/cart-dropdown/index.tsx`: quitar el `PopoverButton` que envuelve el enlace del carrito (`nested-interactive`). El panel es `static` y abre por hover, así que no hace falta.
+  - `apps/storefront/src/modules/products/components/product-tabs/accordion.tsx`: `aria-label={title}` en el `AccordionPrimitive.Trigger` (`button-name`).
+- Si axe reporta algo más, detente y repórtalo como defecto del blueprint: las cuatro correcciones de arriba son las únicas que este paso toca.
+
+**Done when**
+- [ ] WHEN axe analiza `/mx`, `/mx/store` y el PDP con las etiquetas WCAG 2.2 AA THE SYSTEM SHALL reportar 0 violaciones.
+- [ ] WHEN `node apps/storefront/scripts/check-tokens.mjs` corre después de editar `globals.css` THE SYSTEM SHALL salir con 0.
+
+**Verify**
+```bash
+npm --prefix apps/storefront run typecheck                                         # expect: exit 0
+node apps/storefront/scripts/check-tokens.mjs                                      # expect: exit 0
+npm run test:e2e -- e2e/a11y.spec.ts                                               # expect: exit 0, 0 failed
+npm run test:e2e -- e2e/catalogo.spec.ts                                           # expect: exit 0 — el paso 15 sigue verde
+```
+
+**Checkpoint**
+```bash
+git add -A && git commit -m "step 17: accesibilidad wcag 2.2 aa"
+git tag step-17-a11y
+```
+
+---
+
+#### Step 18 — Checkout México: SPEI, PayPal, tarjeta y Envia
 
 **Do**
 - `apps/storefront/src/lib/constants.tsx`: en el mapa de proveedores del starter (`paymentInfoMap`), agrega `pp_spei_spei: { title: "Transferencia SPEI", icon: <ícono> }` y `pp_paypal_paypal: { title: "PayPal", icon: <ícono> }`, y renombra `pp_stripe_stripe` a "Tarjeta de crédito o débito". Agrega `export const isSpei = (id?: string) => id === "pp_spei_spei"` y `isPaypal` con el mismo patrón.
@@ -1413,6 +1490,7 @@ git tag step-15-catalogo
 - `e2e/checkout-spei.spec.ts`:
   - `beforeAll`: `importarFixture` si el hoodie no existe.
   - Como invitado: `/mx/products/sd-hoodie-oversize-negro`, elegir talla `M` y "Agregar al carrito". En `/mx/checkout`, capturar email `e2e+spei@saintdrip.local`, nombre, la dirección "Centro 1, Huajuapan de León, Oaxaca, 69000, México" y teléfono.
+  - El PDP puede venir de la caché de catálogo (60 s como máximo) con ids de variante de un fixture ya reimportado. Si el carrito no sube a `(1)`, se recarga el PDP durante 90 s como máximo. Las tallas son radios accesibles: se pulsa su `label` (`data-testid="option-button"`) con el texto exacto.
   - Elegir "Envío terrestre", luego "Transferencia SPEI", y pulsar "Generar referencia SPEI".
   - En la confirmación: visible `CLABE` y `000000000000000001`, y el texto `$1,448.00` (1299 + 149).
   - En un segundo carrito, con el perfume publicado, la opción "Envío express" no aparece.
@@ -1433,27 +1511,27 @@ npm run test:e2e -- e2e/catalogo.spec.ts                                        
 
 **Checkpoint**
 ```bash
-git add -A && git commit -m "step 16: checkout mexico"
-git tag step-16-checkout
+git add -A && git commit -m "step 18: checkout mexico"
+git tag step-18-checkout
 ```
 
 ---
 
-#### Step 17 — Cuenta: solicitar factura
+#### Step 19 — Cuenta: solicitar factura
 
 **Do**
 - `apps/storefront/src/modules/order/components/invoice-request/index.tsx` (cliente con server action):
   - Formulario "Solicitar factura" con campos etiquetados `RFC`, `Razón social`, `Régimen fiscal` (select con 601, 603, 605, 606, 612, 616, 621, 626), `Código postal` y `Uso del CFDI` (select con G01, G03, S01).
   - Hace `POST /store/invoices` con una server action `solicitarFactura` en `apps/storefront/src/lib/data/invoices.ts` (`fetch` con `getAuthHeaders()` y `x-publishable-api-key`). Devuelve `{ ok, id, uuid }` o `{ ok: false, codigo, mensaje }`. No usa `sdk.client.fetch`, porque su `FetchError` solo conserva `message` y las rutas propias responden `{ codigo, mensaje }`.
-  - Si sale bien, muestra `Factura emitida` y el uuid, con el enlace "Descargar PDF" a `/store/invoices/<id>/pdf`. Si falla, muestra el `mensaje` en `role="alert"`.
+  - Si sale bien, muestra `Factura emitida` y el uuid, con el enlace "Descargar PDF" a `/api/invoices/<id>/pdf`. Es un proxy del storefront, `apps/storefront/src/app/api/invoices/[id]/pdf/route.ts`, que lee la sesión con `getAuthHeaders()` y reenvía a `/store/invoices/<id>/pdf` con la llave publicable. Hace falta porque la cookie `_medusa_jwt` es del dominio del storefront y no viaja al backend. Devuelve `application/pdf` con `Cache-Control: private, no-store`. Si falla, muestra el `mensaje` en `role="alert"`.
   - Mientras envía, el botón dice "Timbrando…".
 - `apps/storefront/src/modules/order/templates/order-details-template.tsx`: renderiza `<InvoiceRequest orderId={order.id} />` debajo del resumen del pedido.
 - `e2e/cuenta-factura.spec.ts`:
   1. Registrar en `/mx/account` el cliente `e2e+cuenta-<timestamp>@saintdrip.local` y guardar una dirección en `/mx/account/addresses` (Huajuapan, 69000).
-  2. Comprar el hoodie con SPEI como en el paso 16, con el usuario autenticado.
-  3. Capturar el pago con la Admin API: `GET /admin/orders/:id?fields=payment_collections.payments.id` y luego `POST /admin/payments/:id/capture`. El helper de admin del paso 5 se extiende con `capturarPagoDelPedido(request, orderId)`.
+  2. Comprar el hoodie con SPEI como en el paso 18, con el usuario autenticado.
+  3. Capturar el pago con la Admin API: `GET /admin/orders/:id?fields=payment_collections.payments.id` y luego `POST /admin/payments/:id/capture`. La función `capturarPagoDelPedido(request, orderId)` vive en el propio spec.
   4. En `/mx/account/orders` debe aparecer el pedido. En su detalle, llenar RFC `XAXX010101000`, razón social, régimen 616, CP 69000 y uso S01, y enviar.
-  5. Esperar `Factura emitida` y el uuid `00000000-0000-4000-8000-000000000001`. Un segundo envío muestra el mensaje de `E_YA_FACTURADO`.
+  5. Esperar `Factura emitida` y el uuid `00000000-0000-4000-8000-000000000001`. El enlace "Descargar PDF" responde 200 `application/pdf` y el cuerpo empieza con `%PDF` (con `page.request`, que comparte la sesión). Un segundo envío muestra el mensaje de `E_YA_FACTURADO`.
 
 **Done when**
 - [ ] WHEN un cliente registrado guarda una dirección THE SYSTEM SHALL listarla en `/mx/account/addresses`.
@@ -1465,18 +1543,18 @@ git tag step-16-checkout
 ```bash
 npm --prefix apps/storefront run typecheck                                         # expect: exit 0
 npm run test:e2e -- e2e/cuenta-factura.spec.ts                                     # expect: exit 0, 0 failed
-npm run test:e2e -- e2e/checkout-spei.spec.ts                                      # expect: exit 0 — el paso 16 sigue verde
+npm run test:e2e -- e2e/checkout-spei.spec.ts                                      # expect: exit 0 — el paso 18 sigue verde
 ```
 
 **Checkpoint**
 ```bash
-git add -A && git commit -m "step 17: cuenta y solicitud de factura"
-git tag step-17-cuenta
+git add -A && git commit -m "step 19: cuenta y solicitud de factura"
+git tag step-19-cuenta
 ```
 
 ---
 
-#### Step 18 — Endurecimiento: Sentry, vencimiento SPEI, conciliación y CI
+#### Step 20 — Endurecimiento: Sentry, vencimiento SPEI, conciliación y CI
 
 **Do**
 - `apps/backend/instrumentation.ts` (existe en el scaffold; reemplaza su contenido completo): `export function register() { if (!process.env.SENTRY_DSN) return; Sentry.init({ dsn: process.env.SENTRY_DSN, environment: process.env.NODE_ENV, tracesSampleRate: 0.1, dataCollection: { userInfo: false, cookies: false, httpHeaders: false, httpBodies: [], urlQueryParams: false, databaseQueryData: false } }) }`, con `import * as Sentry from "@sentry/node"`. En `@sentry/node` 11 no existe `sendDefaultPii`: `dataCollection` lo reemplaza, y sus valores por defecto recolectan todo. Medusa carga `instrumentation.ts` desde la raíz del backend al arrancar.
@@ -1515,8 +1593,8 @@ npm run test:e2e                                                                
 
 **Checkpoint**
 ```bash
-git add -A && git commit -m "step 18: endurecimiento y ci"
-git tag step-18-endurecimiento
+git add -A && git commit -m "step 20: endurecimiento y ci"
+git tag step-20-endurecimiento
 ```
 
 ---
@@ -1546,7 +1624,7 @@ del checklist de lanzamiento (§20.1).
 ### Accounts to create first
 | Servicio | URL | Lo necesita por primera vez |
 |---|---|---|
-| Stripe (cuenta MX, habilitar "Bank transfers") | https://dashboard.stripe.com/register | §20.1 (pruebas en vivo de tarjeta y SPEI); los pasos 6 y 16 usan mock |
+| Stripe (cuenta MX, habilitar "Bank transfers") | https://dashboard.stripe.com/register | §20.1 (pruebas en vivo de tarjeta y SPEI); los pasos 6 y 18 usan mock |
 | PayPal Developer (app REST + webhook) | https://developer.paypal.com | §20.1; el paso 7 usa mock |
 | Envia.com (token de API, sandbox) | https://envia.com | §20.1; el paso 8 usa mock |
 | FacturAPI (organización con CSD cargado) | https://www.facturapi.io | §20.1; los pasos 9–11 usan mock |
@@ -1554,7 +1632,7 @@ del checklist de lanzamiento (§20.1).
 | Cloudflare R2 (bucket público + token S3) | https://dash.cloudflare.com | Producción (§12) |
 | Railway | https://railway.com | Producción (§12) |
 | Vercel | https://vercel.com | Producción (§12) |
-| Sentry | https://sentry.io | Paso 18 (opcional en local) |
+| Sentry | https://sentry.io | Paso 20 (opcional en local) |
 
 Ningún paso de §9 necesita credenciales reales: todo integrador tiene un modo `mock`
 determinista. Las cuentas se crean antes del lanzamiento.
@@ -1585,7 +1663,7 @@ Storefront: `apps/storefront/.env.local`. El scaffold lo crea con sus propias cl
 | `FACTURAPI_MODE` / `FACTURAPI_KEY` | `mock` \| `live` · llave secreta | FacturAPI → API keys | 9 / producción | sí (key) |
 | `RESEND_API_KEY` / `EMAIL_FROM` | Correos | Resend → API keys | 12 / producción | sí (key) |
 | `STOREFRONT_URL` | Links en correos (`/mx/order/...`) | local `http://localhost:8000` | 13 | no |
-| `SENTRY_DSN` | Errores del backend | Sentry → Project → DSN | 18 (opcional local) | sí |
+| `SENTRY_DSN` | Errores del backend | Sentry → Project → DSN | 20 (opcional local) | sí |
 | `PORT` | Puerto HTTP de Medusa (`9000`); solo se fija en Railway (§12) | — | producción | no |
 | `VITE_BACKEND_URL` | Base URL del SDK en el admin; vacío = `/` (mismo origen). Opcional | — | 5 (opcional) | no |
 | `DB_HOST` / `DB_USERNAME` / `DB_PASSWORD` | Servidor donde `@medusajs/test-utils` crea bases temporales | `.env.test` (`localhost` / `medusa` / `medusa`) | 1 | no |
@@ -1593,7 +1671,7 @@ Storefront: `apps/storefront/.env.local`. El scaffold lo crea con sus propias cl
 | `NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY` | Llave publicable | `write-storefront-env.mjs` | Bootstrap | no (es pública) |
 | `NEXT_PUBLIC_BASE_URL` / `NEXT_PUBLIC_DEFAULT_REGION` | URL y región `mx` | `.env.example` | Bootstrap | no |
 | `NEXT_PUBLIC_STRIPE_KEY` | Publishable key de Stripe | Stripe | producción / §20.1 | no |
-| `NEXT_PUBLIC_PAYPAL_CLIENT_ID` | Botones PayPal; vacío = botón de prueba | PayPal | 16 (vacío) / producción | no |
+| `NEXT_PUBLIC_PAYPAL_CLIENT_ID` | Botones PayPal; vacío = botón de prueba | PayPal | 18 (vacío) / producción | no |
 | `NEXT_PUBLIC_WHATSAPP_NUMBER` | Botón de WhatsApp (`529531720664`) | la marca | 14 | no |
 
 **La validación se degrada por paso** (§9 regla 9). Fuera de producción, ninguna variable integradora
@@ -1609,7 +1687,7 @@ con su key). En producción, `assertProductionEnv` (paso 2) exige todo lo marcad
 | `docker-compose.yml`, `playwright.config.ts`, `apps/backend/jest.config.js`, `apps/backend/tsconfig.json`, `apps/backend/integration-tests/setup.js`, `scripts/*.mjs`, `.nvmrc` | Configs que usan los gates | — no lo cubre ningún patrón de ignore |
 | Fixtures `apps/backend/src/lib/catalog-import/__fixtures__/*.xlsx`, `e2e/fixtures/**` | Entradas de los tests | — no lo cubre ningún patrón de ignore |
 | `apps/backend/src/modules/facturapi/migrations/*` | Esquema reproducible | — no lo cubre ningún patrón de ignore |
-| `CLAUDE.md`, `AGENTS.md`, `.claude/**`, `blueprints/saint-drip/**`, `docs/**` | Configuración del agente y diseño | — no lo cubre ningún patrón de ignore |
+| `CLAUDE.md`, `AGENTS.md`, `apps/storefront/CLAUDE.md`, `apps/storefront/AGENTS.md` (los genera `next dev`), `.claude/**`, `blueprints/saint-drip/**`, `docs/**` | Configuración del agente y diseño | — no lo cubre ningún patrón de ignore |
 | `.github/workflows/ci.yml` | CI | — no lo cubre ningún patrón de ignore |
 
 Los `.gitignore` emitidos (raíz, `apps/backend/`, `apps/storefront/`) llegan con la copia del workspace,
@@ -1663,7 +1741,7 @@ npm --prefix apps/storefront install --save-exact @paypal/react-paypal-js@10.6.1
 npm install
 npx --no-install playwright install chromium
 
-# 6. Local env file — never overwrite an existing .env
+# 6. Local env file — never overwrite an existing .env (merge-scaffold.mjs does not copy the scaffold's own .env)
 [ -f apps/backend/.env ] || cp apps/backend/.env.example apps/backend/.env
 
 # 7. Services → schema → seed (idempotent) → storefront publishable key (idempotent)
@@ -1749,7 +1827,7 @@ Verificado en vivo el 2026-11-21 con `npm view <pkg> dist-tags` (registro npm), 
 | Production | `main` | `saintdrip.mx` (tienda) · `api.saintdrip.mx` (backend y admin en `/app`) | Railway "production" | live |
 
 ### CI/CD
-GitHub Actions `.github/workflows/ci.yml` (paso 18):
+GitHub Actions `.github/workflows/ci.yml` (paso 20):
 1. install;
 2. migrate y seed;
 3. backend typecheck, unit, integration y build;
@@ -1778,7 +1856,7 @@ Es el mismo gate que §20.1. Railway y Vercel despliegan `main` de forma automá
 |---|---|---|---|---|
 | Unit | Jest + @swc/jest (`TEST_TYPE=unit`) | Lógica pura: carga masiva, reglas CFDI, plantillas de correo, reconciliación, validación de entorno; proveedores SPEI/PayPal/Envia con gateways dobles; suscriptores con contenedor doble | `apps/backend/src/**/__tests__/*.unit.spec.ts` | cada commit |
 | Integration | Jest + `@medusajs/test-utils` (`TEST_TYPE=integration:http`) | API real de Medusa sobre una base temporal por suite: health, seed, importación, facturas | `apps/backend/integration-tests/http/*.spec.ts` | cada commit |
-| E2E | Playwright + axe | Admin de carga masiva, catálogo sin JS, a11y, checkout SPEI, cuenta y factura | `e2e/*.spec.ts` | cada PR y antes del deploy |
+| E2E | Playwright + axe | Admin de carga masiva, catálogo sin JS, caché de catálogo (60 s), a11y, checkout SPEI, cuenta y factura | `e2e/*.spec.ts` | cada PR y antes del deploy |
 
 ### Critical flows to cover E2E
 1. Carga masiva: Excel con errores → tabla; Excel válido + fotos → 3 productos creados (`e2e/carga-masiva.spec.ts`).
@@ -1813,9 +1891,9 @@ Es el mismo gate que §20.1. Railway y Vercel despliegan `main` de forma automá
 | Rate limiting / abuse | Sin limitador propio en v1. Los webhooks verifican la firma. El registro de clientes queda detrás de la protección de bots de Vercel | §20.2 |
 | Webhook verification | Stripe `constructEvent` con `SPEI_WEBHOOK_SECRET`/`STRIPE_WEBHOOK_SECRET`; PayPal `verify-webhook-signature`; Medusa deduplica por sesión de pago | pasos 6 y 7 |
 | Dependency audit | `npm audit --omit=dev --audit-level=high` en cada app, mensual; lo corrige quien mantiene | CI (manual en v1) |
-| Security headers | En Vercel (`next.config.js` del storefront, paso 18 o lanzamiento): `Strict-Transport-Security: max-age=63072000; includeSubDomains; preload`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `X-Frame-Options: DENY`. La CSP en modo report-only en v1, porque PayPal y Stripe cargan scripts propios | checklist §20.1 |
+| Security headers | En Vercel (`next.config.js` del storefront, paso 20 o lanzamiento): `Strict-Transport-Security: max-age=63072000; includeSubDomains; preload`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `X-Frame-Options: DENY`. La CSP en modo report-only en v1, porque PayPal y Stripe cargan scripts propios | checklist §20.1 |
 | PII handling | Nombre, email, teléfono, dirección y RFC en Postgres (Railway, cifrado en reposo). Las tarjetas nunca tocan el servidor (Stripe Elements y PayPal). Borrado a petición (§8) | — |
-| Logging hygiene | Nunca se registran el body de los webhooks, las llaves ni el RFC completo; Sentry con `dataCollection` apagado (`userInfo`, `cookies`, `httpHeaders`, `httpBodies`, `urlQueryParams`, `databaseQueryData`) | pasos 6, 7 y 18 |
+| Logging hygiene | Nunca se registran el body de los webhooks, las llaves ni el RFC completo; Sentry con `dataCollection` apagado (`userInfo`, `cookies`, `httpHeaders`, `httpBodies`, `urlQueryParams`, `databaseQueryData`) | pasos 6, 7 y 20 |
 
 **Hard rules**
 - No secret is ever committed, printed in a log, sent to an error tracker, or embedded in a client bundle. Anything reaching the browser is public — treat it that way.
@@ -1924,9 +2002,9 @@ NOT APPLICABLE — this project does not call an LLM at runtime.
 
 | Skill | Build steps | Why | Install |
 |---|---|---|---|
-| `frontend-design` (auto-activa; se nombra en prosa) | 14, 15, 16 | Componentes del storefront fieles a §7 | `/plugin install frontend-design@claude-plugins-official` |
-| `emil-design-eng` (auto-activa) | 14, 16 | Micro-interacciones del carrito y el checkout dentro de los tiempos de §7 | `npx skills add emilkowalski/skill` |
-| `playwright-cli` (auto-activa) | 5, 15, 16, 17 | Depurar los E2E interactivamente | `npx skills add microsoft/playwright-cli` |
+| `frontend-design` (auto-activa; se nombra en prosa) | 14, 15, 17, 18 | Componentes del storefront fieles a §7 | `/plugin install frontend-design@claude-plugins-official` |
+| `emil-design-eng` (auto-activa) | 14, 18 | Micro-interacciones del carrito y el checkout dentro de los tiempos de §7 | `npx skills add emilkowalski/skill` |
+| `playwright-cli` (auto-activa) | 5, 15, 16, 17, 18, 19 | Depurar los E2E interactivamente | `npx skills add microsoft/playwright-cli` |
 | `/claude-seo-ai:audit` | después del paso 15 | Indexabilidad de PDP/PLP y datos estructurados | `/plugin marketplace add fitodark/claude-seo-ai` y luego `/plugin install claude-seo-ai@claude-seo-ai` |
 | `/humanizalo` | 12, 15 | Copy de producto y de correos en español natural | `/plugin marketplace add fitodark/humanizalo` y luego `/plugin install humanizalo@humanizalo` |
 
@@ -1988,16 +2066,16 @@ subcomando por subcomando, y niega leer `.env`, `git push` y borrar volúmenes.
 |---|---|---|---|---|
 | `docker-compose.yml` | `docker-compose.yml` | 1, 9 (psql), toda la suite vía `services:up` | imágenes fijadas + healthchecks; sin variables | n/a — this tool never walks the tree |
 | `package.json` (raíz) | `package.json` | `npm run services:*`, `npm run test:e2e` | sin workspaces npm: cada app se instala con `--prefix` | n/a — sin globs de workspaces |
-| `apps/backend/jest.config.js` | `apps/backend/jest.config.js` | 1–13, 18 | `loadEnv("test")` carga `.env.test`; `@swc/jest` con TS/TSX y decorators | `testPathIgnorePatterns: ["/node_modules/", "/blueprints/", "/.medusa/"]` |
-| `apps/backend/integration-tests/setup.js` | `apps/backend/integration-tests/setup.js` | 1, 2, 4, 10, 18 | limpia `MetadataStorage` de MikroORM | n/a — this tool never walks the tree |
+| `apps/backend/jest.config.js` | `apps/backend/jest.config.js` | 1–13, 20 | `loadEnv("test")` carga `.env.test`; `@swc/jest` con TS/TSX y decorators | `testPathIgnorePatterns: ["/node_modules/", "/blueprints/", "/.medusa/"]` |
+| `apps/backend/integration-tests/setup.js` | `apps/backend/integration-tests/setup.js` | 1, 2, 4, 10, 13, 20 | limpia `MetadataStorage` de MikroORM | n/a — this tool never walks the tree |
 | `apps/backend/.env.test` | `apps/backend/.env.test` | todos los `test:*` | `DB_HOST`/`DB_USERNAME`/`DB_PASSWORD` para bases temporales; integradores en mock | n/a — this tool never walks the tree |
 | `apps/backend/.env.example` | → `.env` (Bootstrap) | `dev`, `build`, `seed`, `db:*` | lo lee `loadEnv` en `medusa-config.ts` | n/a — this tool never walks the tree |
-| `playwright.config.ts` | `playwright.config.ts` | 5, 15, 16, 17, 18 | `webServer` levanta backend y storefront; `testDir: ./e2e` | `testIgnore: ["**/blueprints/**", "**/fixtures/**", "**/helpers/**"]` |
+| `playwright.config.ts` | `playwright.config.ts` | 5, 15, 16, 17, 18, 19, 20 | `webServer` levanta backend y storefront; `testDir: ./e2e` | `testIgnore: ["**/blueprints/**", "**/fixtures/**", "**/helpers/**"]` |
 | `scripts/with-server.mjs` | `scripts/with-server.mjs` | 1, 2, 6, 7, 8, 12, 14 | apaga el árbol de procesos (`taskkill /T` en Windows, grupo en POSIX) | n/a — this tool never walks the tree |
-| `scripts/store-check.mjs` | `scripts/store-check.mjs` | 6, 7, 8, 14 | lee la llave de `apps/storefront/.env.local` | n/a — this tool never walks the tree |
-| `scripts/merge-scaffold.mjs`, `scripts/write-storefront-env.mjs` | `scripts/` | §10 Bootstrap | — | n/a — this tool never walks the tree |
-| `seed-saint-drip.ts`, `print-publishable-key.ts` | `apps/backend/src/scripts/` | §10, 1, 2, 4, 6, 7, 8, 10 | se ejecutan con `medusa exec` (el entorno viene de `medusa-config.ts`) | n/a |
-| Fixtures xlsx / jpg | `apps/backend/src/lib/catalog-import/__fixtures__/`, `e2e/fixtures/` | 3, 4, 5, 15, 16, 17 | — | n/a |
+| `scripts/store-check.mjs` | `scripts/store-check.mjs` | 6, 7, 8, 14 | lee la llave de `apps/storefront/.env.local`. En modo `html` deshace la conversión de rutas de Git Bash/MSYS (`/mx` llega como `C:/Program Files/Git/mx`) quitando la raíz de `cygpath -m /` | n/a — this tool never walks the tree |
+| `scripts/merge-scaffold.mjs`, `scripts/write-storefront-env.mjs` | `scripts/` | §10 Bootstrap | `merge-scaffold` no copia del scaffold `apps/backend/.env`, porque con él `db:migrate` agotó las conexiones (FATAL 53300), ni los scripts demo (§4). `write-storefront-env` siempre compara la llave de `.env.local` con la de `print-key` y la renueva si la base se recreó | n/a — this tool never walks the tree |
+| `seed-saint-drip.ts`, `print-publishable-key.ts` | `apps/backend/src/scripts/` | §10, 1, 2, 4, 6, 7, 8, 10, 13 | se ejecutan con `medusa exec` (el entorno viene de `medusa-config.ts`) | n/a |
+| Fixtures xlsx / jpg | `apps/backend/src/lib/catalog-import/__fixtures__/`, `e2e/fixtures/` | 3, 4, 5, 15, 16, 17, 18, 19 | — | n/a |
 | tsconfig de cada app | storefront: del scaffold · backend: `workspace/apps/backend/tsconfig.json` (el workspace gana sobre el scaffold) | `typecheck` | `tsc` solo recorre `apps/<app>`; `blueprints/` está fuera de ambas raíces. Backend: `"types": ["jest", "node"]`, porque TypeScript 6 cambió el valor por defecto de `types` a `[]`. Además excluye `src/admin`, que usa `import.meta` y que el script `typecheck` revisa con su propio `src/admin/tsconfig.json` | n/a — `blueprints/` no está bajo `apps/backend` ni `apps/storefront` |
 
 **El bundle dentro del proyecto:** `blueprints/` cuelga de la raíz. Jest y Playwright lo excluyen de
@@ -2018,8 +2096,8 @@ desde el admin) son relativas comunes, válidas en todos los cargadores.
 | URL de Postgres | `docker-compose.yml` (usuario, password, base y puerto) | `postgres://medusa:medusa@localhost:5432/saint_drip` | `apps/backend/.env.example` `DATABASE_URL` · `.env.test` (`DB_*` + `DATABASE_URL`) · §9 psql `-U medusa -d saint_drip` · `ci.yml` servicios | yes |
 | URL de Redis | `docker-compose.yml` | `redis://localhost:6379` | `.env.example` `REDIS_URL` · `ci.yml` | yes |
 | Ids de opciones Envia | `seed-saint-drip.ts` — `SEED.enviaOptions[].id` | `envia-terrestre`, `envia-express` | `getFulfillmentOptions()` paso 8 · tests paso 8 | yes |
-| Nombre visible de la opción terrestre | `seed-saint-drip.ts` — `SEED.enviaOptions[0].name` | `Envío terrestre` | `store-check.mjs shipping-option` paso 8 · `getFulfillmentOptions` · E2E paso 16 | yes |
-| Ids de proveedores de pago | identifier + id en `medusa-config.ts` | `pp_spei_spei`, `pp_paypal_paypal`, `pp_stripe_stripe` | `store-check` pasos 6 y 7 · `constants.tsx` paso 16 · reconciliación paso 18 · suscriptor paso 13 | yes |
+| Nombre visible de la opción terrestre | `seed-saint-drip.ts` — `SEED.enviaOptions[0].name` | `Envío terrestre` | `store-check.mjs shipping-option` paso 8 · `getFulfillmentOptions` · E2E paso 18 | yes |
+| Ids de proveedores de pago | identifier + id en `medusa-config.ts` | `pp_spei_spei`, `pp_paypal_paypal`, `pp_stripe_stripe` | `store-check` pasos 6 y 7 · `constants.tsx` paso 18 · reconciliación paso 20 · suscriptor paso 13 | yes |
 | Proveedor de fulfillment | identifier `envia` + id `envia` | `envia_envia` | `SEED.enviaProviderId` · paso 8 | yes |
 | Credenciales del admin | `SEED.adminEmail` + `.env.example` `SEED_ADMIN_PASSWORD` | `admin@saintdrip.local` / `saintdrip-dev` | `.env.test` · paso 4 test · `e2e/helpers/admin.ts` | yes |
 | Llave publicable | `SEED.publishableKeyTitle` | `Storefront Saint Drip` | `print-publishable-key.ts` · `write-storefront-env.mjs` (regex `PUBLISHABLE_KEY=`) | yes |
@@ -2028,12 +2106,12 @@ desde el admin) son relativas comunes, válidas en todos los cargadores.
 | Salida del build del backend | `medusa build` | `apps/backend/.medusa/server` | paso 2 Verify · §12 start command · `.gitignore` `.medusa/` | yes |
 | Número de WhatsApp | `apps/storefront/.env.example` | `529531720664` | paso 14 Verify | yes |
 | Versión de Node | `.nvmrc` | `24.22.3` | `package.json` engines `>=24.22.3` · §10 · §11 · `ci.yml` | yes |
-| Imágenes | `docker-compose.yml` | `postgres:17.12-alpine`, `redis:7.4.12-alpine` | `ci.yml` · §11 · paso 18 Verify | yes |
+| Imágenes | `docker-compose.yml` | `postgres:17.12-alpine`, `redis:7.4.12-alpine` | `ci.yml` · §11 · paso 20 Verify | yes |
 
 #### Byte-exact artifact reconciliation
 | Byte-exact artifact | Authored by | First diffed at | Blueprint rules that constrain it | Runtime call that produces it, on the §11 pin | Both confirmed |
 |---|---|---|---|---|---|
-| `$1,448.00` / `$1,299.00` (texto esperado en E2E y en el test de correos) | §9 pasos 12, 15, 16 | 12 | §4 montos en unidades mayores; §5 total = 1299 + 149 (mock de Envia); IVA incluido | `new Intl.NumberFormat("es-MX",{style:"currency",currency:"MXN"}).format(1448)` → `"$1,448.00"`, ejecutado en Node 24 (ICU 78.2) el 2026-11-21 | yes |
+| `$1,448.00` / `$1,299.00` (texto esperado en E2E y en el test de correos) | §9 pasos 12, 15, 18 | 12 | §4 montos en unidades mayores; §5 total = 1299 + 149 (mock de Envia); IVA incluido | `new Intl.NumberFormat("es-MX",{style:"currency",currency:"MXN"}).format(1448)` → `"$1,448.00"`, ejecutado en Node 24 (ICU 78.2) el 2026-11-21 | yes |
 | Tripletas de error del fixture `plantilla-con-errores.xlsx` | §19.6 fixture + paso 3 | 3 | §5 tabla de reglas y códigos; filas numeradas desde la 2; se marca la aparición posterior | No es una cadena del runtime: son códigos del propio proyecto; las celdas del fixture se leyeron de vuelta con openpyxl y todas son texto | yes |
 | `"1299.00"` en `offers.price` del JSON-LD | paso 15 | 15 | §6: precio con 2 decimales; §4 unidades mayores | `(1299).toFixed(2)` → `"1299.00"` (estable en V8) | yes |
 
@@ -2067,7 +2145,7 @@ the reason it claims.
 
 Plus these manual gates — the post-build launch checklist — each checked once before launch:
 
-- [ ] Every step in §9 has its checkpoint tag in git: `git tag -l 'step-*'` lista los 18, de `step-01-arranque` a `step-18-endurecimiento`.
+- [ ] Every step in §9 has its checkpoint tag in git: `git tag -l 'step-*'` lista los 20, de `step-01-arranque` a `step-20-endurecimiento`.
 - [ ] Every file §10's *Files that must be committed* table names is present in a clean checkout. Por ejemplo, `git ls-files --error-unmatch apps/backend/.env.test` sale con 0, una ruta por invocación. Para cada una, `status=0; git check-ignore -q <ruta> || status=$?; test "$status" -eq 1` sale con 0.
 - [ ] The ignore file was in place before the first commit: `test "$(git log --diff-filter=A --format=%H -- .gitignore | tail -n 1)" = "$(git rev-list --max-parents=0 HEAD)"` exits 0.
 - [ ] Every row of §19.6's *Byte-exact artifact reconciliation* table reads `Both confirmed: yes`.
@@ -2099,8 +2177,8 @@ hides inside it.
 | La API de Medusa 2.23 difiere de la usada en el seed o en las firmas de proveedores (opciones de `workflow-engine-redis`, `authService.register`) | M | M | `typecheck` del paso 1 o el arranque del paso 2 falla | El paso 1 compila el seed antes que nada; el paso 2 apunta a la página exacta de la documentación. El cambio se limita al archivo señalado |
 | Plugins y SDKs de terceros (PayPal, Envia, FacturAPI) con respuestas distintas a lo documentado | M | M | Las verificaciones en vivo de §20.1 fallan | Cada integración vive tras un `gateway.ts` con modo mock: el arreglo toca un solo archivo y no rompe los gates |
 | Cumplimiento fiscal: factura global mal formada o un periodo omitido | L | H | El contador rechaza la prueba de §20.1; el log `factura-global` falta el día 1 | Revisión del contador antes de live; índice único por periodo; job idempotente; alerta en §16 |
-| Pedidos SPEI no pagados retienen inventario | M | M | Muchos `spei.vencido` | Vencimiento de 72 h y cancelación automática (paso 18) que libera la reserva |
-| Perfumes enviados por aire (mercancía peligrosa) | L | H | Una guía express con un perfume | `solo_terrestre` bloquea express en el cálculo (paso 8) y lo prueba E2E (paso 16) |
+| Pedidos SPEI no pagados retienen inventario | M | M | Muchos `spei.vencido` | Vencimiento de 72 h y cancelación automática (paso 20) que libera la reserva |
+| Perfumes enviados por aire (mercancía peligrosa) | L | H | Una guía express con un perfume | `solo_terrestre` bloquea express en el cálculo (paso 8) y lo prueba E2E (paso 18) |
 | El starter de Next.js cambia rutas o archivos entre la fecha del blueprint y el build | M | M | Un archivo "editado en paso N" no existe en esa ruta | El builder busca el componente equivalente por nombre (`paymentInfoMap`, `order-completed-template`) y lo anota. Si no existe, se detiene y lo reporta |
 | La operación propia de Medusa (respaldos, actualizaciones) recae en un equipo pequeño | M | M | Postgres sin respaldo verificado | Respaldos diarios de Railway, una restauración de prueba en el lanzamiento, y actualizar Medusa por minor cada trimestre con este mismo gate |
 
@@ -2124,6 +2202,7 @@ hides inside it.
 | 15 | Decision: hold jest 29 / @types/jest 29 (latest 30.5.2 / 30.0.0) y typescript 6 (latest 7.0.2) | Subir a jest 30 y TS 7 | Why: `@medusajs/test-utils` 2.23.0 se publica con jest 29; TS 7 es la reescritura en Go y no se verificó que Medusa 2.23 lo acepte (verified 2026-11-21) | Would reverse if: Medusa publique el scaffold con jest 30 / TS 7 |
 | 16 | Decision: hold Node 24.22.3 (ya existe la LTS 26.13.1) | Node 26 | Why: el runtime track no cambia en un refresh; Medusa 2.23 pide `>=22.22.0` (verified 2026-11-21) | Would reverse if: Medusa recomiende Node 26 o la 24 salga de mantenimiento |
 | 17 | Decision: migraciones de API sobre los mismos pins: sin `inApp` en `medusaIntegrationTestRunner` (test-utils 2.23); `types: ["jest","node"]` y `exclude: src/admin` en el tsconfig del backend (TS 6; nuevo `workspace/apps/backend/tsconfig.json`); `typecheck` = `tsc --noEmit && tsc --noEmit -p src/admin/tsconfig.json`; server action `apps/storefront/src/lib/data/invoices.ts` en lugar de `sdk.client.fetch` (js-sdk 2.23: `FetchError` solo lee `message`); Sentry con `dataCollection` en lugar de `sendDefaultPii` (@sentry/node 11) | Texto original del blueprint | Why: las APIs publicadas de las versiones fijadas no coinciden con el texto; se reprodujeron durante el build: `TS2353` por `inApp`; `Cannot find name 'jest'` por el `types: []` de TS 6; `TS1470` por `import.meta` en `src/admin` bajo CommonJS; un 409 mostrado como "Conflict" porque `FetchError` solo lee `message`; y `TS2353` por `sendDefaultPii`. Se confirmaron en los artefactos de unpkg el 2026-11-21 | Would reverse if: se cambian los pins a versiones donde la API original existe |
+| 18 | Decision: incorporar al bundle las 14 desviaciones de contenido del primer build: Bootstrap sin el `.env` ni los scripts demo del scaffold; seed con MXN IVA incluido y filtros válidos en runtime; `write-storefront-env` que renueva la llave; `store-check` compatible con MSYS; Envia busca la metadata `solo_terrestre` por `product_id`; correo "factura emitida" en el paso 13; JSON-LD único en el PDP; caché de catálogo de 60 s; helper E2E que libera reservas; proxy del PDF; mock de FacturAPI con id único; archivos de agente de `next dev` | Dejarlas solo como notas del build | Why: cada una se reprodujo en el build del 2026-11-21 (el primer `db:migrate`, el typecheck, los E2E del checkout (paso 18, antes 16), el total de $1,655.84 en lugar de $1,448.00, las variantes borradas servidas por la caché). Sin ellas, una reconstrucción desde cero cae en los mismos defectos | Would reverse if: una versión nueva del scaffold o de Medusa corrige de origen alguno de estos comportamientos |
 
 ### 20.4 What to build next
 1. **Cupones y promociones de temporada**, cuando llegue la primera campaña con código.

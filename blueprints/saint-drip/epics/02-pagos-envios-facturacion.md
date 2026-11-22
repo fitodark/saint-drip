@@ -185,6 +185,7 @@ git tag step-07-paypal
   - **`canCalculate`:** devuelve `true`.
   - **`calculatePrice(optionData, data, context)`:**
     - Si `optionData.id === "envia-express"` y algún `context.items[].variant.product.metadata.solo_terrestre === true`, lanza `MedusaError(NOT_ALLOWED, "Este pedido contiene productos que solo pueden enviarse por tierra")`.
+    - Medusa 2.23 arma ese `context` con `cartFieldsForCalculateShippingOptionsPrices`, que trae `items.variant.product.id` pero **no** la `metadata` del producto. Para los items que no la traen, el servicio la busca por `product_id` con una función inyectable `buscarMetadata(productIds)` (`deps.buscarMetadata`, tercer parámetro del constructor). La implementación por defecto lee `product.id, product.metadata` por la conexión `__pg_connection__` que Medusa registra en el contenedor del módulo, porque un proveedor de fulfillment no puede resolver el módulo de productos. Solo consulta cuando se cotiza express.
     - Si no, cotiza un paquete: peso = suma de `variant.weight × quantity` en kg, y medidas = máximo de largo y ancho y suma de alto.
     - Elige la tarifa más barata del `tipo` pedido y devuelve `{ calculated_amount: total, is_calculated_price_tax_inclusive: true }`.
     - Si no hay tarifas de ese tipo, lanza `MedusaError(NOT_FOUND, "Sin tarifas de Envia para este código postal")`.
@@ -192,12 +193,13 @@ git tag step-07-paypal
   - **`createFulfillment`:** `generarGuia` → `{ data: { tracking, carrier }, labels: [{ tracking_number, tracking_url, label_url }] }`.
   - **`cancelFulfillment`:** `cancelarGuia`.
 - `apps/backend/src/modules/envia-fulfillment/index.ts`: `ModuleProvider(Modules.FULFILLMENT, { services: [EnviaFulfillmentService] })`.
-- `apps/backend/src/modules/envia-fulfillment/__tests__/envia.unit.spec.ts`, 5 casos:
+- `apps/backend/src/modules/envia-fulfillment/__tests__/envia.unit.spec.ts`, 6 casos:
   1. En `mock`, terrestre → 149.
   2. Express con un item `solo_terrestre` → lanza el mensaje exacto.
   3. Con un gateway doble que devuelve 3 tarifas terrestres (210, 180, 199) → 180.
   4. `createFulfillment` → `labels[0].tracking_number === "MOCK123456"`.
   5. `production` sin token → lanza `ENVIA_API_TOKEN no configurado`.
+  6. Express con un item en la forma real del contexto (`variant.product.id` sin `metadata`) y un `buscarMetadata` doble que lo marca `solo_terrestre` → lanza el mensaje exacto. El mismo item con terrestre → 149.
 - `apps/backend/medusa-config.ts`: agrega en `fulfillment.options.providers` `{ resolve: "./src/modules/envia-fulfillment", id: "envia", options: { environment: process.env.ENVIA_ENVIRONMENT ?? "mock", token: process.env.ENVIA_API_TOKEN, origenCp: "69000" } }`.
 
 **Acceptance**
@@ -209,7 +211,7 @@ git tag step-07-paypal
 
 **Verify**
 ```bash
-npm --prefix apps/backend run test:unit -- src/modules/envia-fulfillment           # expect: exit 0, 5 passed
+npm --prefix apps/backend run test:unit -- src/modules/envia-fulfillment           # expect: exit 0, 6 passed
 npm --prefix apps/backend run typecheck                                            # expect: exit 0
 npm --prefix apps/backend run seed                                                 # expect: exit 0 — crea las 2 opciones de envío
 node scripts/with-server.mjs "npm --prefix apps/backend run dev" http://localhost:9000/health OK 240 -- node scripts/store-check.mjs shipping-option "Envío terrestre"   # expect: exit 0
@@ -241,7 +243,7 @@ git tag step-08-envia
 - `apps/backend/src/modules/facturapi/models/cfdi-invoice.ts`: exactamente el schema de §4.
 - `apps/backend/src/modules/facturapi/gateway.ts`: `export interface FacturapiGateway { timbrar(cfdi: CfdiEntrada): Promise<{ id: string; uuid: string; total: number }>; pdf(id: string): Promise<Buffer> }`, donde `CfdiEntrada = { receptor: { rfc; razon_social; regimen_fiscal; codigo_postal }; uso_cfdi: string; items: { descripcion: string; precio: number; cantidad: number }[]; global?: { periodicidad: "month"; mes: string; anio: number } }`. Los precios llevan IVA 16 % incluido.
   - **`crearFacturapiGateway(key)`** usa `new Facturapi(key)` y `facturapi.invoices.create`, con customer `{ legal_name, tax_id, tax_system, address: { zip } }`, `use`, `items: [{ quantity, product: { description, product_key: "01010101", price, tax_included: true } }]`, `payment_form: "03"` y el campo `global` cuando aplica. `pdf` usa `facturapi.invoices.downloadPdf`.
-  - **`crearFacturapiGatewayMock()`:** devuelve `{ id: "facturapi_mock_<n>", uuid: "00000000-0000-4000-8000-000000000001", total }` y un PDF de 4 bytes `%PDF`.
+  - **`crearFacturapiGatewayMock()`:** devuelve `{ id: "facturapi_mock_<marca de tiempo del arranque del proceso>_<n>", uuid: "00000000-0000-4000-8000-000000000001", total }` y un PDF de 4 bytes `%PDF`. El id no se repite entre reinicios del backend, porque `facturapi_id` es único en `cfdi_invoice`.
 - `apps/backend/src/modules/facturapi/service.ts`: `class FacturapiModuleService extends MedusaService({ CfdiInvoice })`. El constructor lee las opciones `{ mode, key }` y elige el gateway. Expone `gateway()`.
 - `apps/backend/src/modules/facturapi/index.ts`: `export const FACTURAPI_MODULE = "facturapi"; export default Module(FACTURAPI_MODULE, { service: FacturapiModuleService })`.
 - `apps/backend/medusa-config.ts`: agrega en `modules` `{ resolve: "./src/modules/facturapi", options: { mode: process.env.FACTURAPI_MODE === "live" ? "live" : "mock", key: process.env.FACTURAPI_KEY } }`.
@@ -291,7 +293,7 @@ git tag step-09-cfdi-modulo
   - Lee el pedido con `query.graph({ entity: "order", fields: ["id","customer_id","created_at","total","items.title","items.quantity","items.total","payment_collections.status"], filters: { id } })`. `pago_capturado` = alguna `payment_collection.status` igual a `completed`.
   - Revisa si ya existe un CFDI individual del pedido y aplica `validarSolicitud`.
   - Timbra con un item por línea del pedido (`precio = item.total / item.quantity`) y guarda `cfdi_invoice` con `kind: "individual"`, `order_ids: { ids: [id] }` y `rfc`.
-  - Responde 201 `{ id, uuid }`. Un error del gateway se traduce a 502 `E_PAC`.
+  - Responde 201 `{ id, uuid }`. Un error del gateway se traduce a 502 `E_PAC`. Si el insert choca con el índice único parcial de `order_id` (dos solicitudes simultáneas), responde 409 `E_YA_FACTURADO`. Cualquier otro error de base de datos se propaga y no se disfraza de "ya facturado".
 - `apps/backend/src/api/store/invoices/[id]/pdf/route.ts`: `GET` busca la factura y comprueba que el pedido sea del cliente autenticado (si no, 403 `E_NO_ES_TU_PEDIDO`). Devuelve el PDF con `Content-Type: application/pdf`.
 - `apps/backend/src/api/middlewares.ts`: agrega al mismo arreglo `routes` la entrada `{ matcher: "/store/invoices*", middlewares: [authenticate("customer", ["session", "bearer"])] }`, con `authenticate` importado de `@medusajs/framework/http` en el import existente, junto a `configureStoreSearch` y `defineMiddlewares`. Las entradas de `/store/search` y `/admin/catalog-import/*` no cambian.
 - `apps/backend/integration-tests/http/invoices.spec.ts`:
@@ -429,12 +431,14 @@ git tag step-12-correos
 
 ## E2-T8 — Paso 13: Suscriptores de pedido y envío
 
-**Depende de:** E2-T7 · **Checkpoint:** `step-13-suscriptores`
+**Depende de:** E2-T5, E2-T7 · **Checkpoint:** `step-13-suscriptores`
 
 **Files**
 - `apps/backend/src/subscribers/order-placed.ts`
 - `apps/backend/src/subscribers/shipment-created.ts`
 - `apps/backend/src/subscribers/__tests__/subscribers.unit.spec.ts`
+- `apps/backend/src/api/store/invoices/route.ts`
+- `apps/backend/integration-tests/http/invoices.spec.ts`
 
 **Do**
 
@@ -444,6 +448,8 @@ git tag step-12-correos
   - Si el proveedor es `pp_spei_spei`, pasa `spei` desde `payment.data`.
   - Llama `notificationModule.createNotifications({ to: email, channel: "email", template: "confirmacion-pedido", content: confirmacionPedido({ …, urlPedido: STOREFRONT_URL + "/mx/order/" + id + "/confirmed" }) })`.
 - `apps/backend/src/subscribers/shipment-created.ts`: evento `shipment.created` con `data.id` del fulfillment. Lee el fulfillment con `labels` y su pedido, y envía `envioGenerado`.
+- `apps/backend/src/api/store/invoices/route.ts` (del paso 10): después de guardar el CFDI individual envía `createNotifications({ to: order.email, channel: "email", template: "factura-emitida", content: facturaEmitida({ display_id, uuid, urlPdf: STOREFRONT_URL + "/mx/account/orders/details/" + order.id }) })`. Para eso agrega `display_id` y `email` a los campos del `query.graph` del pedido. El enlace lleva a la página del pedido, donde el paso 19 pone "Descargar PDF", porque la ruta del PDF exige sesión de cliente. Si el envío falla, solo registra un aviso: el CFDI ya está timbrado y la respuesta sigue siendo 201.
+- `apps/backend/integration-tests/http/invoices.spec.ts` (del paso 10): el caso 1 afirma además que `notificationModule.listNotifications({ template: "factura-emitida", to })` devuelve 1 notificación por el canal `email`.
 - `apps/backend/src/subscribers/__tests__/subscribers.unit.spec.ts`. Prueba los handlers con un `container` doble cuyo `resolve` devuelve un `query.graph` falso y un `createNotifications` hecho con `jest.fn()`. 3 casos:
   1. Pedido SPEI → `createNotifications` recibe `template "confirmacion-pedido"` y un `content.html` que contiene la CLABE.
   2. Pedido con tarjeta → el html no contiene `CLABE`.
@@ -453,10 +459,12 @@ git tag step-12-correos
 1. WHEN se emite `order.placed` para un pedido SPEI THE SYSTEM SHALL enviar exactamente 1 notificación por el canal `email` con plantilla `confirmacion-pedido` que contiene la CLABE.
 2. WHEN el pedido se pagó con tarjeta THE SYSTEM SHALL enviar la confirmación sin bloque SPEI.
 3. WHEN se emite `shipment.created` THE SYSTEM SHALL enviar `envio-generado` con el número de rastreo de la etiqueta.
+4. WHEN se timbra un CFDI individual THE SYSTEM SHALL crear exactamente 1 notificación `factura-emitida` por el canal `email`.
 
 **Verify**
 ```bash
 npm --prefix apps/backend run test:unit -- src/subscribers                         # expect: exit 0, 3 passed
+npm --prefix apps/backend run test:integration:http -- integration-tests/http/invoices.spec.ts   # expect: exit 0, 5 passed — incluye la notificación factura-emitida
 npm --prefix apps/backend run typecheck && npm --prefix apps/backend run build     # expect: exit 0
 ```
 

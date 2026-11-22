@@ -362,23 +362,28 @@
     "title": "Paso 13: Suscriptores de pedido y envío",
     "epic": "02-pagos-envios-facturacion",
     "dependencies": [
+      "E2-T5",
       "E2-T7"
     ],
     "priority": "p0",
     "acceptance": [
       "WHEN se emite `order.placed` para un pedido SPEI THE SYSTEM SHALL enviar exactamente 1 notificación por el canal `email` con plantilla `confirmacion-pedido` que contiene la CLABE.",
       "WHEN el pedido se pagó con tarjeta THE SYSTEM SHALL enviar la confirmación sin bloque SPEI.",
-      "WHEN se emite `shipment.created` THE SYSTEM SHALL enviar `envio-generado` con el número de rastreo de la etiqueta."
+      "WHEN se emite `shipment.created` THE SYSTEM SHALL enviar `envio-generado` con el número de rastreo de la etiqueta.",
+      "WHEN se timbra un CFDI individual THE SYSTEM SHALL crear exactamente 1 notificación `factura-emitida` por el canal `email`."
     ],
     "verify": [
       "npm --prefix apps/backend run test:unit -- src/subscribers",
+      "npm --prefix apps/backend run test:integration:http -- integration-tests/http/invoices.spec.ts",
       "npm --prefix apps/backend run typecheck && npm --prefix apps/backend run build"
     ],
     "checkpoint": "step-13-suscriptores",
     "files": [
       "apps/backend/src/subscribers/order-placed.ts",
       "apps/backend/src/subscribers/shipment-created.ts",
-      "apps/backend/src/subscribers/__tests__/subscribers.unit.spec.ts"
+      "apps/backend/src/subscribers/__tests__/subscribers.unit.spec.ts",
+      "apps/backend/src/api/store/invoices/route.ts",
+      "apps/backend/integration-tests/http/invoices.spec.ts"
     ],
     "status": "done"
   },
@@ -414,7 +419,7 @@
   },
   {
     "id": "E3-T2",
-    "title": "Paso 15: Inicio por categorías, PDP con JSON-LD y accesibili",
+    "title": "Paso 15: Inicio por categorías y PDP con JSON-LD",
     "epic": "03-tienda-lanzamiento",
     "dependencies": [
       "E1-T5",
@@ -426,32 +431,87 @@
       "WHEN se pide el PDP del hoodie sin JavaScript THE SYSTEM SHALL contener `$1,299.00` en el HTML y un JSON-LD `Product` con `offers.price` `\"1299.00\"` en `MXN`.",
       "WHEN se pide `/mx` THE SYSTEM SHALL mostrar una sección por categoría con productos publicados (ROPA y TENIS con el fixture) y omitir las vacías.",
       "WHEN un producto tiene `metadata.solo_terrestre = true` THE SYSTEM SHALL mostrar \"Solo envío terrestre\" en su PDP.",
-      "WHEN axe analiza `/mx`, `/mx/store` y el PDP con las etiquetas WCAG 2.2 AA THE SYSTEM SHALL reportar 0 violaciones."
+      "WHEN se inspecciona el HTML del PDP THE SYSTEM SHALL contener exactamente un bloque JSON-LD de producto (`Product` o `ProductGroup`)."
     ],
     "verify": [
       "npm --prefix apps/storefront run typecheck",
       "node apps/storefront/scripts/check-tokens.mjs",
-      "npm run test:e2e -- e2e/catalogo.spec.ts e2e/a11y.spec.ts"
+      "npm run test:e2e -- e2e/catalogo.spec.ts"
     ],
     "checkpoint": "step-15-catalogo",
     "files": [
       "apps/storefront/src/modules/home/components/category-rails/index.tsx",
       "apps/storefront/src/app/[countryCode]/(main)/page.tsx",
       "apps/storefront/src/modules/products/templates/index.tsx",
-      "e2e/catalogo.spec.ts",
+      "apps/storefront/src/app/[countryCode]/(main)/products/[handle]/page.tsx",
+      "e2e/catalogo.spec.ts"
+    ],
+    "status": "done"
+  },
+  {
+    "id": "E3-T6",
+    "title": "Paso 16: Caché de catálogo de 60 s",
+    "epic": "03-tienda-lanzamiento",
+    "dependencies": [
+      "E3-T2"
+    ],
+    "priority": "p0",
+    "acceptance": [
+      "WHEN se leen `products.ts` y `categories.ts` THE SYSTEM SHALL fijar `revalidate: CATALOGO_REVALIDATE_S` (60) en los tres fetch de catálogo: uno en `products.ts` y dos en `categories.ts`.",
+      "WHEN el título del hoodie cambia por `POST /admin/products/:id` después de que su PDP ya está en caché THE SYSTEM SHALL mostrar el título nuevo en `data-testid=\"product-title\"` del PDP en 90 s como máximo (`e2e/cache-catalogo.spec.ts`)."
+    ],
+    "verify": [
+      "npm --prefix apps/storefront run typecheck",
+      "test \"$(grep -c 'revalidate: CATALOGO_REVALIDATE_S' apps/storefront/src/lib/data/products.ts)\" -ge 1 && test \"$(grep -c 'revalidate: CATALOGO_REVALIDATE_S' apps/storefront/src/lib/data/categories.ts)\" -ge 2",
+      "npm run test:e2e -- e2e/cache-catalogo.spec.ts",
+      "npm run test:e2e -- e2e/catalogo.spec.ts"
+    ],
+    "checkpoint": "step-16-cache-catalogo",
+    "files": [
+      "apps/storefront/src/lib/data/products.ts",
+      "apps/storefront/src/lib/data/categories.ts",
+      "e2e/cache-catalogo.spec.ts"
+    ],
+    "status": "done"
+  },
+  {
+    "id": "E3-T7",
+    "title": "Paso 17: Accesibilidad WCAG 2.2 AA",
+    "epic": "03-tienda-lanzamiento",
+    "dependencies": [
+      "E3-T2"
+    ],
+    "priority": "p0",
+    "acceptance": [
+      "WHEN axe analiza `/mx`, `/mx/store` y el PDP con las etiquetas WCAG 2.2 AA THE SYSTEM SHALL reportar 0 violaciones.",
+      "WHEN `node apps/storefront/scripts/check-tokens.mjs` corre después de editar `globals.css` THE SYSTEM SHALL salir con 0."
+    ],
+    "verify": [
+      "npm --prefix apps/storefront run typecheck",
+      "node apps/storefront/scripts/check-tokens.mjs",
+      "npm run test:e2e -- e2e/a11y.spec.ts",
+      "npm run test:e2e -- e2e/catalogo.spec.ts"
+    ],
+    "checkpoint": "step-17-a11y",
+    "files": [
+      "apps/storefront/src/styles/globals.css",
+      "apps/storefront/src/modules/layout/components/medusa-cta/index.tsx",
+      "apps/storefront/src/modules/layout/components/cart-dropdown/index.tsx",
+      "apps/storefront/src/modules/products/components/product-tabs/accordion.tsx",
       "e2e/a11y.spec.ts"
     ],
     "status": "done"
   },
   {
     "id": "E3-T3",
-    "title": "Paso 16: Checkout México: SPEI, PayPal, tarjeta y Envia",
+    "title": "Paso 18: Checkout México: SPEI, PayPal, tarjeta y Envia",
     "epic": "03-tienda-lanzamiento",
     "dependencies": [
       "E2-T1",
       "E2-T2",
       "E2-T3",
-      "E3-T2"
+      "E3-T2",
+      "E3-T6"
     ],
     "priority": "p0",
     "acceptance": [
@@ -466,7 +526,7 @@
       "npm run test:e2e -- e2e/checkout-spei.spec.ts",
       "npm run test:e2e -- e2e/catalogo.spec.ts"
     ],
-    "checkpoint": "step-16-checkout",
+    "checkpoint": "step-18-checkout",
     "files": [
       "apps/storefront/src/lib/constants.tsx",
       "apps/storefront/src/modules/checkout/components/payment-button/index.tsx",
@@ -478,7 +538,7 @@
   },
   {
     "id": "E3-T4",
-    "title": "Paso 17: Cuenta: solicitar factura",
+    "title": "Paso 19: Cuenta: solicitar factura",
     "epic": "03-tienda-lanzamiento",
     "dependencies": [
       "E2-T5",
@@ -496,23 +556,25 @@
       "npm run test:e2e -- e2e/cuenta-factura.spec.ts",
       "npm run test:e2e -- e2e/checkout-spei.spec.ts"
     ],
-    "checkpoint": "step-17-cuenta",
+    "checkpoint": "step-19-cuenta",
     "files": [
       "apps/storefront/src/modules/order/components/invoice-request/index.tsx",
       "apps/storefront/src/lib/data/invoices.ts",
       "apps/storefront/src/modules/order/templates/order-details-template.tsx",
       "e2e/cuenta-factura.spec.ts",
-      "e2e/helpers/admin.ts"
+      "apps/storefront/src/app/api/invoices/[id]/pdf/route.ts"
     ],
     "status": "done"
   },
   {
     "id": "E3-T5",
-    "title": "Paso 18: Endurecimiento: Sentry, vencimiento SPEI, conciliac",
+    "title": "Paso 20: Endurecimiento: Sentry, vencimiento SPEI, conciliac",
     "epic": "03-tienda-lanzamiento",
     "dependencies": [
       "E2-T1",
-      "E2-T8"
+      "E2-T8",
+      "E3-T7",
+      "E3-T4"
     ],
     "priority": "p1",
     "acceptance": [
@@ -529,7 +591,7 @@
       "npm --prefix apps/backend run test:integration:http",
       "npm run test:e2e"
     ],
-    "checkpoint": "step-18-endurecimiento",
+    "checkpoint": "step-20-endurecimiento",
     "files": [
       "apps/backend/instrumentation.ts",
       "apps/backend/src/lib/reconciliacion.ts",

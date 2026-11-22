@@ -5,6 +5,8 @@ blueprint no correspondía al scaffold real de `create-medusa-app` 2.23.0. Cada 
 usuario. El bundle original (`blueprint.md`, `epics/`, `workspace/`) **no se modificó**. Todavía hay
 que corregirlo con `/architect-refresh` o con una pasada nueva de `/architect`.
 
+> **Estado (2026-11-21): las 19 desviaciones ya están incorporadas al bundle.** D2, D3, D7, D16 y D19 entraron con `/architect-refresh` (commit `6cf645a`, §20.3 #13–#17). Las 14 de contenido entraron por edición directa con el `blueprint-validator` como gate (§20.3 #18). Esta tabla queda como registro histórico de por qué cambió cada cosa.
+
 | # | Fecha | Paso | Defecto del blueprint | Arreglo aplicado | Pendiente en el blueprint |
 |---|---|---|---|---|---|
 | D1 | 2026-11-21 | Bootstrap §10, sub-paso 6 | `create-medusa-app` ya genera `apps/backend/.env`, así que `[ -f .env ] \|\| cp .env.example .env` lo conserva. Con ese `.env`, `db:migrate` falló con `FATAL 53300 too many clients already` | Se reemplazó `apps/backend/.env` por `.env.example` y se reintentó `db:migrate`, que salió con 0 | Hacer que el sub-paso 6 sobrescriba el `.env` del scaffold, o que `merge-scaffold.mjs` lo omita |

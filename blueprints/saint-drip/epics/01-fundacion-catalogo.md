@@ -409,8 +409,8 @@ git tag step-04-carga-api
   - **Emparejado de fotos:** reutiliza `emparejarFotos` importado de `../../../lib/catalog-import/photos` para avisar antes de validar.
 - `e2e/helpers/admin.ts`:
   - `iniciarSesionAdmin(page)`: `POST http://localhost:9000/auth/user/emailpass` con `admin@saintdrip.local` / `saintdrip-dev` y luego `POST http://localhost:9000/auth/session` con `Authorization: Bearer <token>` usando `page.request`, que comparte las cookies con la página.
-  - `borrarProductosFixture(request)`: con el token, `GET /admin/products?handle=<h>` y `DELETE /admin/products/:id` para cada handle del fixture.
-  - `importarFixture(request)`: sube las 4 fotos de `e2e/fixtures/fotos/` por `POST /admin/uploads` (multipart `files`) y llama `POST /admin/catalog-import/importar` con `e2e/fixtures/plantilla-valida.xlsx`. Lo reutilizan los pasos 15–17.
+  - `borrarProductosFixture(request)`: con el token, `GET /admin/products?handle=<h>` y `DELETE /admin/products/:id` para cada handle del fixture. Antes de cada `DELETE`, libera las reservas de inventario de sus variantes. Para eso hace `GET /admin/products/:id?fields=id,variants.inventory_items.inventory_item_id`, luego `GET /admin/reservations?inventory_item_id=<id>` y por último `DELETE /admin/reservations/:id`. Hace falta porque los pedidos de prueba de los pasos 18 y 19 dejan reservas, y Medusa rechaza borrar un producto que las tiene (400 `Cannot remove following inventory item(s) since they have reservations`).
+  - `importarFixture(request)`: sube las 4 fotos de `e2e/fixtures/fotos/` por `POST /admin/uploads` (multipart `files`) y llama `POST /admin/catalog-import/importar` con `e2e/fixtures/plantilla-valida.xlsx`. Lo reutilizan los pasos 15–19.
 - `e2e/carga-masiva.spec.ts`:
   - `beforeAll` llama `borrarProductosFixture`. Después: iniciar sesión, ir a `http://localhost:9000/app/carga-masiva` y comprobar que la descarga de `Descargar plantilla` se llama `plantilla-catalogo-saint-drip.xlsx`.
   - **Archivo con errores:** cargar `apps/backend/src/lib/catalog-import/__fixtures__/plantilla-con-errores.xlsx`, pulsar `Validar` y esperar 6 filas en la tabla de errores.

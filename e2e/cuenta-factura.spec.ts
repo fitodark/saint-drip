@@ -1,5 +1,6 @@
 import { expect, request as playwrightRequest, test, type Page } from "@playwright/test"
-import { BACKEND_URL, capturarPagoDelPedido, importarFixture, tokenAdmin } from "./helpers/admin"
+import type { APIRequestContext } from "@playwright/test"
+import { BACKEND_URL, importarFixture, tokenAdmin } from "./helpers/admin"
 
 // Cuenta del cliente (paso 17): registro, dirección, compra SPEI autenticada, captura y solicitud de CFDI.
 const UUID_MOCK = "00000000-0000-4000-8000-000000000001"
@@ -13,6 +14,21 @@ const DIRECCION = {
   estado: "Oaxaca",
   cp: "69000",
   telefono: "9531720664",
+}
+
+// Captura el pago de un pedido por la Admin API (equivale a confirmar la transferencia SPEI). Vive en el spec
+// para dejar el paso 17 en 5 archivos (§9 regla 1) con el proxy del PDF.
+async function capturarPagoDelPedido(request: APIRequestContext, orderId: string): Promise<void> {
+  const headers = { Authorization: `Bearer ${await tokenAdmin(request)}` }
+  const detalle = await request.get(`${BACKEND_URL}/admin/orders/${orderId}?fields=payment_collections.payments.id`, {
+    headers,
+  })
+  if (!detalle.ok()) throw new Error(`GET /admin/orders/${orderId} falló: ${detalle.status()} ${await detalle.text()}`)
+  const { order } = await detalle.json()
+  const pagoId: string | undefined = order.payment_collections?.[0]?.payments?.[0]?.id
+  if (!pagoId) throw new Error(`El pedido ${orderId} no tiene pagos`)
+  const captura = await request.post(`${BACKEND_URL}/admin/payments/${pagoId}/capture`, { headers, data: {} })
+  if (!captura.ok()) throw new Error(`POST /admin/payments/${pagoId}/capture falló: ${captura.status()} ${await captura.text()}`)
 }
 
 const existeHoodie = async () => {

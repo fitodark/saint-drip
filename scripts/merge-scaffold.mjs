@@ -5,7 +5,7 @@
 //   A) monorepo:  .scaffold-tmp/saint-drip/apps/backend + .scaffold-tmp/saint-drip/apps/storefront
 //   B) siblings:  .scaffold-tmp/saint-drip (backend) + .scaffold-tmp/saint-drip-storefront
 import { copyFileSync, existsSync, mkdirSync, readdirSync, rmSync, statSync } from "node:fs"
-import { join } from "node:path"
+import { join, relative, sep } from "node:path"
 
 const root = ".scaffold-tmp/saint-drip"
 const fail = (msg) => {
@@ -24,14 +24,22 @@ if (existsSync(join(root, "apps/backend/medusa-config.ts"))) {
   fail("layout desconocido: no se encontró medusa-config.ts")
 }
 
-const copyMissing = (from, to) => {
+// Archivos del scaffold que NO se copian (rutas relativas a apps/backend):
+// - .env: el sub-paso 6 de Bootstrap lo crea desde .env.example. El del scaffold trae otra configuración
+//   y con él `db:migrate` agotó las conexiones de Postgres (FATAL 53300).
+// - initial-data-seed.ts y seed-demo-products.ts: siembran la región "Europe", productos demo y
+//   "European Warehouse" en `db:migrate`; el catálogo entra solo por la carga masiva (§4).
+const OMITIR_BACKEND = new Set([".env", "src/migration-scripts/initial-data-seed.ts", "src/scripts/seed-demo-products.ts"])
+
+const copyMissing = (from, to, base = from, omitir = new Set()) => {
   for (const entry of readdirSync(from)) {
     if (entry === "node_modules" || entry === ".git") continue
     const src = join(from, entry)
     const dest = join(to, entry)
+    if (omitir.has(relative(base, src).split(sep).join("/"))) continue
     if (statSync(src).isDirectory()) {
       mkdirSync(dest, { recursive: true })
-      copyMissing(src, dest)
+      copyMissing(src, dest, base, omitir)
     } else if (!existsSync(dest)) {
       copyFileSync(src, dest)
     }
@@ -41,7 +49,7 @@ const copyMissing = (from, to) => {
 for (const [from, to] of pairs) {
   if (!existsSync(from)) fail(`falta ${from}`)
   mkdirSync(to, { recursive: true })
-  copyMissing(from, to)
+  copyMissing(from, to, from, to === "apps/backend" ? OMITIR_BACKEND : new Set())
 }
 
 for (const required of ["apps/backend/medusa-config.ts", "apps/backend/package.json", "apps/storefront/package.json"]) {

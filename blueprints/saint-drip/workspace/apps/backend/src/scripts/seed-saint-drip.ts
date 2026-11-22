@@ -80,7 +80,9 @@ export default async function seedSaintDrip({ container }: ExecArgs) {
       selector: { id: store.id },
       update: {
         name: SEED.storeName,
-        supported_currencies: [{ currency_code: "mxn", is_default: true }],
+        // D14: is_tax_inclusive en la moneda. Los precios del catálogo se crean por currency_code (sin regla de
+        // región), así que Medusa usa la preferencia de la moneda y no la de la región México.
+        supported_currencies: [{ currency_code: "mxn", is_default: true, is_tax_inclusive: true }],
         default_sales_channel_id: salesChannel.id,
       },
     },
@@ -185,14 +187,16 @@ export default async function seedSaintDrip({ container }: ExecArgs) {
       fields: ["id", "fulfillment_providers.id"],
       filters: { id: location.id },
     })
-    const linked = (locations[0]?.fulfillment_providers ?? []).some((p) => p?.id === SEED.enviaProviderId)
+    const linked = (locations[0]?.fulfillment_providers ?? []).some((p: { id?: string } | null) => p?.id === SEED.enviaProviderId)
     if (!linked) {
       await link.create({
         [Modules.STOCK_LOCATION]: { stock_location_id: location.id },
         [Modules.FULFILLMENT]: { fulfillment_provider_id: SEED.enviaProviderId },
       })
     }
-    const existing = await fulfillmentService.listShippingOptions({ provider_id: SEED.enviaProviderId })
+    const existing = (await fulfillmentService.listShippingOptions({})).filter(
+      (e) => e.provider_id === SEED.enviaProviderId
+    )
     for (const option of SEED.enviaOptions) {
       if (existing.some((e) => (e.data as { id?: string } | null)?.id === option.id)) continue
       await createShippingOptionsWorkflow(container).run({
