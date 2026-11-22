@@ -69,7 +69,16 @@ export default defineConfig({
     {
       resolve: "@medusajs/medusa/notification",
       options: {
-        providers: [{ resolve: "@medusajs/medusa/notification-local", id: "local", options: { channels: ["email"] } }],
+        // Siempre exactamente un proveedor para el canal email: Resend con llave, notification-local sin ella.
+        providers: [
+          process.env.RESEND_API_KEY
+            ? {
+                resolve: "./src/modules/resend-notification",
+                id: "resend",
+                options: { channels: ["email"], apiKey: process.env.RESEND_API_KEY, from: process.env.EMAIL_FROM },
+              }
+            : { resolve: "@medusajs/medusa/notification-local", id: "local", options: { channels: ["email"] } },
+        ],
       },
     },
     {

@@ -355,7 +355,7 @@
       "apps/backend/medusa-config.ts",
       "apps/backend/src/lib/emails/__tests__/templates.unit.spec.ts"
     ],
-    "status": "pending"
+    "status": "done"
   },
   {
     "id": "E2-T8",
