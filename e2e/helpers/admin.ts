@@ -33,6 +33,30 @@ export async function iniciarSesionAdmin(page: Page): Promise<void> {
   if (!sesion.ok()) throw new Error(`No se pudo abrir la sesión de admin: ${sesion.status()}`)
 }
 
+// D15: los pedidos de los E2E de checkout (pasos 16 y 17) dejan reservas de inventario, y Medusa no borra un
+// producto cuyos inventory items tienen reservas ("Cannot remove following inventory item(s) since they have
+// reservations"). Antes de borrar el fixture se liberan esas reservas. Los pedidos de prueba conservan su snapshot.
+async function liberarReservas(request: APIRequestContext, headers: Record<string, string>, productoId: string) {
+  const detalle = await request.get(
+    `${BACKEND_URL}/admin/products/${productoId}?fields=id,variants.inventory_items.inventory_item_id`,
+    { headers }
+  )
+  if (!detalle.ok()) throw new Error(`GET /admin/products/${productoId} falló: ${detalle.status()}`)
+  const { product } = await detalle.json()
+  const itemIds: string[] = (product.variants ?? []).flatMap((v: { inventory_items?: { inventory_item_id: string }[] }) =>
+    (v.inventory_items ?? []).map((i) => i.inventory_item_id)
+  )
+  for (const itemId of itemIds) {
+    const lista = await request.get(`${BACKEND_URL}/admin/reservations?inventory_item_id=${itemId}&limit=100`, { headers })
+    if (!lista.ok()) throw new Error(`GET /admin/reservations falló: ${lista.status()}`)
+    const { reservations } = await lista.json()
+    for (const reserva of reservations as { id: string }[]) {
+      const borrada = await request.delete(`${BACKEND_URL}/admin/reservations/${reserva.id}`, { headers })
+      if (!borrada.ok()) throw new Error(`DELETE /admin/reservations/${reserva.id} falló: ${borrada.status()}`)
+    }
+  }
+}
+
 export async function borrarProductosFixture(request: APIRequestContext): Promise<void> {
   const headers = { Authorization: `Bearer ${await tokenAdmin(request)}` }
   for (const handle of HANDLES_FIXTURE) {
@@ -40,8 +64,11 @@ export async function borrarProductosFixture(request: APIRequestContext): Promis
     if (!lista.ok()) throw new Error(`GET /admin/products falló: ${lista.status()}`)
     const { products } = await lista.json()
     for (const producto of products as { id: string }[]) {
+      await liberarReservas(request, headers, producto.id)
       const borrado = await request.delete(`${BACKEND_URL}/admin/products/${producto.id}`, { headers })
-      if (!borrado.ok()) throw new Error(`DELETE /admin/products/${producto.id} falló: ${borrado.status()}`)
+      if (!borrado.ok()) {
+        throw new Error(`DELETE /admin/products/${producto.id} falló: ${borrado.status()} ${await borrado.text()}`)
+      }
     }
   }
 }

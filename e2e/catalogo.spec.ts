@@ -32,13 +32,15 @@ test.describe.serial("Catálogo: inicio por categorías y PDP", () => {
   })
 
   test("el inicio muestra ROPA y TENIS y omite las categorías sin productos publicados", async ({ page }) => {
-    await page.goto("/mx")
-
-    await expect(page.getByRole("heading", { level: 1, name: "Exclusividad en cada prenda" })).toBeVisible()
-    await expect(page.getByRole("heading", { level: 2, name: "ROPA" })).toBeVisible()
-    await expect(page.getByRole("heading", { level: 2, name: "TENIS" })).toBeVisible()
-    // El perfume del fixture es borrador: su categoría no tiene productos publicados.
-    await expect(page.getByRole("heading", { level: 2, name: "PERFUMES" })).toHaveCount(0)
+    // D13: los carriles salen de la caché de catálogo (≤ 60 s); tras reimportar el fixture se recarga hasta 90 s.
+    await expect(async () => {
+      await page.goto("/mx")
+      await expect(page.getByRole("heading", { level: 1, name: "Exclusividad en cada prenda" })).toBeVisible()
+      await expect(page.getByRole("heading", { level: 2, name: "ROPA" })).toBeVisible()
+      await expect(page.getByRole("heading", { level: 2, name: "TENIS" })).toBeVisible()
+      // El perfume del fixture es borrador: su categoría no tiene productos publicados.
+      await expect(page.getByRole("heading", { level: 2, name: "PERFUMES" })).toHaveCount(0)
+    }).toPass({ timeout: 90_000, intervals: [5_000] })
   })
 
   test("un producto solo_terrestre publicado muestra la insignia en su PDP", async ({ page }) => {
@@ -53,7 +55,10 @@ test.describe.serial("Catálogo: inicio por categorías y PDP", () => {
     expect(publicar.ok()).toBeTruthy()
     await request.dispose()
 
-    await page.goto(PDP_PERFUME)
-    await expect(page.getByText("Solo envío terrestre")).toBeVisible()
+    // D13: el PDP del perfume pudo quedar en caché como borrador; se recarga hasta 90 s.
+    await expect(async () => {
+      await page.goto(PDP_PERFUME)
+      await expect(page.getByText("Solo envío terrestre")).toBeVisible({ timeout: 5_000 })
+    }).toPass({ timeout: 90_000, intervals: [5_000] })
   })
 })

@@ -8,6 +8,10 @@ import { SortOptions } from "@modules/store/components/refinement-list/sort-prod
 import { getAuthHeaders, getCacheOptions } from "./cookies"
 import { getRegion, retrieveRegion } from "./regions"
 
+// D13: el catálogo se refresca en 60 s como máximo, igual que la página (revalidate = 60). Sin esto,
+// force-cache sin tags lo guarda un año y los cambios del admin o de la carga masiva no se verían.
+const CATALOGO_REVALIDATE_S = 60
+
 type ProductListQueryParams = (HttpTypes.FindParams &
   HttpTypes.StoreProductListParams) & {
   options?: string[]
@@ -58,6 +62,7 @@ export const listProducts = async ({
 
   const next = {
     ...(await getCacheOptions("products")),
+    revalidate: CATALOGO_REVALIDATE_S,
   }
 
   return sdk.client

@@ -1,4 +1,4 @@
-import { CreditCard } from "@medusajs/icons"
+import { BuildingsMini, CreditCard } from "@medusajs/icons"
 import Bancontact from "@modules/common/icons/bancontact"
 import Ideal from "@modules/common/icons/ideal"
 import PayPal from "@modules/common/icons/paypal"
@@ -10,7 +10,7 @@ export const paymentInfoMap: Record<
   { title: string; icon: React.JSX.Element }
 > = {
   pp_stripe_stripe: {
-    title: "Credit card",
+    title: "Tarjeta de crédito o débito",
     icon: <CreditCard />,
   },
   "pp_stripe-ideal_stripe": {
@@ -20,6 +20,10 @@ export const paymentInfoMap: Record<
   "pp_stripe-bancontact_stripe": {
     title: "Bancontact",
     icon: <Bancontact />,
+  },
+  pp_spei_spei: {
+    title: "Transferencia SPEI",
+    icon: <BuildingsMini />,
   },
   pp_paypal_paypal: {
     title: "PayPal",
@@ -96,9 +100,8 @@ export const isStripeLike = (providerId?: string) => {
   return providerId?.startsWith("pp_stripe_") || isMedusaPayments(providerId)
 }
 
-export const isPaypal = (providerId?: string) => {
-  return providerId?.startsWith("pp_paypal")
-}
+export const isSpei = (id?: string) => id === "pp_spei_spei"
+export const isPaypal = (id?: string) => id === "pp_paypal_paypal"
 export const isManual = (providerId?: string) => {
   return providerId?.startsWith("pp_system_default")
 }

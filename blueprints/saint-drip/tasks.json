@@ -474,7 +474,7 @@
       "apps/storefront/src/modules/checkout/components/shipping/index.tsx",
       "e2e/checkout-spei.spec.ts"
     ],
-    "status": "pending"
+    "status": "done"
   },
   {
     "id": "E3-T4",

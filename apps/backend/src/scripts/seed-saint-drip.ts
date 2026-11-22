@@ -80,7 +80,9 @@ export default async function seedSaintDrip({ container }: ExecArgs) {
       selector: { id: store.id },
       update: {
         name: SEED.storeName,
-        supported_currencies: [{ currency_code: "mxn", is_default: true }],
+        // D14: is_tax_inclusive en la moneda. Los precios del catálogo se crean por currency_code (sin regla de
+        // región), así que Medusa usa la preferencia de la moneda y no la de la región México.
+        supported_currencies: [{ currency_code: "mxn", is_default: true, is_tax_inclusive: true }],
         default_sales_channel_id: salesChannel.id,
       },
     },

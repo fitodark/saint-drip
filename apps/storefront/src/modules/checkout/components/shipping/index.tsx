@@ -79,6 +79,16 @@ const Shipping: React.FC<ShippingProps> = ({
 
   const hasPickupOptions = !!_pickupMethods?.length
 
+  // §6 (paso 16): una opción calculada cuyo cálculo falla (p. ej. Envío express con un producto
+  // solo_terrestre) se oculta en lugar de mostrarse deshabilitada.
+  const opcionesVisibles = (_shippingMethods ?? []).filter(
+    (option) =>
+      option.price_type !== "calculated" ||
+      isLoadingPrices ||
+      typeof calculatedPricesMap[option.id] === "number"
+  )
+  const sinEnvios = !isLoadingPrices && opcionesVisibles.length === 0
+
   useEffect(() => {
     setIsLoadingPrices(true)
 
@@ -101,7 +111,11 @@ const Shipping: React.FC<ShippingProps> = ({
           setCalculatedPricesMap(pricesMap)
           setIsLoadingPrices(false)
         })
+      } else {
+        setIsLoadingPrices(false)
       }
+    } else {
+      setIsLoadingPrices(false)
     }
 
     if (_pickupMethods?.find((m) => m.id === shippingMethodId)) {
@@ -243,11 +257,13 @@ const Shipping: React.FC<ShippingProps> = ({
                     }
                   }}
                 >
-                  {_shippingMethods?.map((option) => {
-                    const isDisabled =
-                      option.price_type === "calculated" &&
-                      !isLoadingPrices &&
-                      typeof calculatedPricesMap[option.id] !== "number"
+                  {sinEnvios && (
+                    <p className="text-base-regular text-fg-muted py-4" role="status">
+                      No hay envíos disponibles para este código postal.
+                    </p>
+                  )}
+                  {opcionesVisibles.map((option) => {
+                    const isDisabled = false
 
                     return (
                       <Radio
