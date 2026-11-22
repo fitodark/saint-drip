@@ -1,24 +1,22 @@
-// Uncomment this file to enable instrumentation and observability using OpenTelemetry
-// Refer to the docs for installation instructions: https://docs.medusajs.com/learn/debugging-and-testing/instrumentation
+// Errores del backend con Sentry (blueprint paso 18). Sin SENTRY_DSN no se inicializa nada.
+import * as Sentry from "@sentry/node"
 
-// import { registerOtel } from "@medusajs/medusa"
-// // If using an exporter other than Zipkin, require it here.
-// import { ZipkinExporter } from "@opentelemetry/exporter-zipkin"
-
-// // If using an exporter other than Zipkin, initialize it here.
-// const exporter = new ZipkinExporter({
-//   serviceName: 'my-medusa-project',
-// })
-
-// export function register() {
-//   registerOtel({
-//     serviceName: 'medusajs',
-//     // pass exporter
-//     exporter,
-//     instrument: {
-//       http: true,
-//       workflows: true,
-//       query: true
-//     },
-//   })
-// }
+export function register() {
+  if (!process.env.SENTRY_DSN) return
+  Sentry.init({
+    dsn: process.env.SENTRY_DSN,
+    environment: process.env.NODE_ENV,
+    tracesSampleRate: 0.1,
+    // D19: @sentry/node 11 reemplazó `sendDefaultPii` por `dataCollection`, cuyos defaults recolectan usuario,
+    // cookies, cabeceras, cuerpos HTTP, query params y datos de consultas. Equivalente a sendDefaultPii: false
+    // (y a la regla de no registrar RFC, llaves ni bodies de webhooks): todo apagado.
+    dataCollection: {
+      userInfo: false,
+      cookies: false,
+      httpHeaders: false,
+      httpBodies: [],
+      urlQueryParams: false,
+      databaseQueryData: false,
+    },
+  })
+}

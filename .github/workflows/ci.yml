@@ -1,0 +1,98 @@
+# CI de Saint Drip (blueprint paso 18): corre el gate global de §20.1 en cada push o PR a main.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    services:
+      postgres:
+        image: postgres:17.9-alpine
+        env:
+          POSTGRES_USER: medusa
+          POSTGRES_PASSWORD: medusa
+          POSTGRES_DB: saint_drip
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U medusa -d saint_drip"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 30
+      redis:
+        image: redis:7.4.9-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            apps/backend/package-lock.json
+            apps/storefront/package-lock.json
+
+      - name: Entorno local del backend
+        run: cp apps/backend/.env.example apps/backend/.env
+
+      - name: Dependencias
+        run: |
+          npm ci
+          npm --prefix apps/backend ci
+          npm --prefix apps/storefront ci
+
+      - name: Navegador de Playwright
+        run: npx playwright install --with-deps chromium
+
+      # §20.1 — `npm run services:up` lo cubren los services de arriba y `npm ci` el paso Dependencias.
+      - name: Esquema, seed y llave del storefront
+        run: |
+          npm --prefix apps/backend run db:migrate
+          npm --prefix apps/backend run seed
+          node scripts/write-storefront-env.mjs
+
+      - name: Typecheck y tokens
+        run: |
+          npm --prefix apps/backend run typecheck
+          npm --prefix apps/storefront run typecheck
+          node apps/storefront/scripts/check-tokens.mjs
+
+      - name: Tests del backend
+        run: |
+          npm --prefix apps/backend run test:unit
+          npm --prefix apps/backend run test:integration:http
+
+      - name: Builds
+        run: |
+          npm --prefix apps/backend run build
+          node scripts/with-server.mjs "npm --prefix apps/backend run dev" http://localhost:9000/health OK 240 -- npm --prefix apps/storefront run build
+
+      - name: El backend arranca y responde OK
+        run: node scripts/with-server.mjs "npm --prefix apps/backend run dev" http://localhost:9000/health OK 240
+
+      - name: E2E (incluye a11y con 0 violaciones)
+        run: npm run test:e2e
+
+      - name: Reporte de Playwright si falla
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-test-results
+          path: test-results/
+          retention-days: 7

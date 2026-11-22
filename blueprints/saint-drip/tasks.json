@@ -536,6 +536,6 @@
       "apps/backend/src/lib/__tests__/reconciliacion.unit.spec.ts",
       ".github/workflows/ci.yml"
     ],
-    "status": "pending"
+    "status": "done"
   }
 ]
