@@ -42,6 +42,10 @@ export default defineConfig({
         ]
       : []),
     {
+      resolve: "./src/modules/facturapi",
+      options: { mode: process.env.FACTURAPI_MODE === "live" ? "live" : "mock", key: process.env.FACTURAPI_KEY },
+    },
+    {
       resolve: "@medusajs/medusa/file",
       options: {
         providers: [

@@ -267,7 +267,7 @@
       "apps/backend/medusa-config.ts",
       "apps/backend/src/modules/facturapi/migrations/*"
     ],
-    "status": "pending"
+    "status": "done"
   },
   {
     "id": "E2-T5",
