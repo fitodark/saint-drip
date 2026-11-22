@@ -298,7 +298,7 @@
       "apps/backend/src/api/middlewares.ts",
       "apps/backend/integration-tests/http/invoices.spec.ts"
     ],
-    "status": "pending"
+    "status": "done"
   },
   {
     "id": "E2-T6",
