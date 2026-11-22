@@ -380,7 +380,7 @@
       "apps/backend/src/subscribers/shipment-created.ts",
       "apps/backend/src/subscribers/__tests__/subscribers.unit.spec.ts"
     ],
-    "status": "pending"
+    "status": "done"
   },
   {
     "id": "E3-T1",
