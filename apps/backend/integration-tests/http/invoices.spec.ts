@@ -108,6 +108,13 @@ medusaIntegrationTestRunner({
         const cfdis = await facturapi.listCfdiInvoices({ order_id: pedidoId })
         expect(cfdis).toHaveLength(1)
         expect(cfdis[0].kind).toEqual("individual")
+
+        // D10: el correo "factura emitida" sale por el canal email.
+        const notificaciones = await getContainer()
+          .resolve(Modules.NOTIFICATION)
+          .listNotifications({ template: "factura-emitida", to: cliente.email })
+        expect(notificaciones).toHaveLength(1)
+        expect(notificaciones[0].channel).toEqual("email")
       })
 
       it("una segunda solicitud responde 409 E_YA_FACTURADO", async () => {

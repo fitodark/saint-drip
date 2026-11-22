@@ -1,9 +1,10 @@
 // POST /store/invoices — el cliente solicita el CFDI individual de su pedido (blueprint §5).
 import type { AuthenticatedMedusaRequest, MedusaResponse } from "@medusajs/framework/http"
-import { ContainerRegistrationKeys } from "@medusajs/framework/utils"
+import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils"
 import { createStep, createWorkflow, StepResponse, WorkflowResponse } from "@medusajs/framework/workflows-sdk"
 import { z } from "@medusajs/framework/zod"
 import { validarSolicitud } from "../../../lib/cfdi/reglas"
+import { facturaEmitida } from "../../../lib/emails/templates"
 import { FACTURAPI_MODULE } from "../../../modules/facturapi"
 import type FacturapiModuleService from "../../../modules/facturapi/service"
 
@@ -64,6 +65,8 @@ export async function POST(req: AuthenticatedMedusaRequest, res: MedusaResponse)
     entity: "order",
     fields: [
       "id",
+      "display_id",
+      "email",
       "customer_id",
       "created_at",
       "total",
@@ -122,6 +125,7 @@ export async function POST(req: AuthenticatedMedusaRequest, res: MedusaResponse)
         total: timbrado.total,
       },
     })
+    await enviarFacturaEmitida(req, pedido, result.uuid)
     return res.status(201).json({ id: result.id, uuid: result.uuid })
   } catch (e) {
     // El índice único parcial sobre order_id resuelve dos solicitudes simultáneas del mismo pedido.
@@ -129,5 +133,35 @@ export async function POST(req: AuthenticatedMedusaRequest, res: MedusaResponse)
       return error(res, 409, "E_YA_FACTURADO", "Este pedido ya tiene una factura")
     }
     throw e
+  }
+}
+
+// Desviación D10: §5 pide el correo "factura emitida" como efecto de esta ruta. El enlace lleva a la página
+// del pedido en la tienda (allí está "Descargar PDF", paso 17): la ruta del PDF exige sesión de cliente.
+// Un fallo del correo no revierte la respuesta: el CFDI ya está timbrado y guardado.
+async function enviarFacturaEmitida(
+  req: AuthenticatedMedusaRequest,
+  pedido: { id: string; display_id: number; email?: string | null },
+  uuid: string
+) {
+  if (!pedido.email) return
+  const storefront = process.env.STOREFRONT_URL ?? "http://localhost:8000"
+  try {
+    await req.scope.resolve(Modules.NOTIFICATION).createNotifications({
+      to: pedido.email,
+      channel: "email",
+      template: "factura-emitida",
+      content: facturaEmitida({
+        display_id: pedido.display_id,
+        uuid,
+        urlPdf: `${storefront}/mx/account/orders/details/${pedido.id}`,
+      }),
+      resource_id: pedido.id,
+      resource_type: "order",
+    })
+  } catch (e) {
+    req.scope
+      .resolve(ContainerRegistrationKeys.LOGGER)
+      .warn(`factura-emitida: no se pudo enviar el correo del pedido ${pedido.id}: ${e instanceof Error ? e.message : e}`)
   }
 }
