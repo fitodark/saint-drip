@@ -61,12 +61,14 @@ export function crearFacturapiGateway(key: string): FacturapiGateway {
 }
 
 export function crearFacturapiGatewayMock(): FacturapiGateway {
+  // D18: <n> es único entre reinicios del proceso (facturapi_id es único en cfdi_invoice).
+  const base = Date.now()
   let n = 0
   return {
     async timbrar(cfdi) {
       n += 1
       const total = cfdi.items.reduce((suma, i) => suma + i.precio * i.cantidad, 0)
-      return { id: `facturapi_mock_${n}`, uuid: "00000000-0000-4000-8000-000000000001", total }
+      return { id: `facturapi_mock_${base}_${n}`, uuid: "00000000-0000-4000-8000-000000000001", total }
     },
     async pdf() {
       return Buffer.from("%PDF")

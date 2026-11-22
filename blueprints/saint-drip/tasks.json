@@ -503,7 +503,7 @@
       "e2e/cuenta-factura.spec.ts",
       "e2e/helpers/admin.ts"
     ],
-    "status": "pending"
+    "status": "done"
   },
   {
     "id": "E3-T5",

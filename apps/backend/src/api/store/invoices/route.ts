@@ -129,7 +129,8 @@ export async function POST(req: AuthenticatedMedusaRequest, res: MedusaResponse)
     return res.status(201).json({ id: result.id, uuid: result.uuid })
   } catch (e) {
     // El índice único parcial sobre order_id resuelve dos solicitudes simultáneas del mismo pedido.
-    if (e instanceof Error && /unique|duplicate|already exists/i.test(e.message)) {
+    // D18: solo un choque sobre order_id significa "ya facturado"; cualquier otro error se propaga.
+    if (e instanceof Error && /order_id/i.test(e.message) && /unique|duplicate|already exists/i.test(e.message)) {
       return error(res, 409, "E_YA_FACTURADO", "Este pedido ya tiene una factura")
     }
     throw e
