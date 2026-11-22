@@ -14,7 +14,7 @@ jobs:
 
     services:
       postgres:
-        image: postgres:17.9-alpine
+        image: postgres:17.12-alpine
         env:
           POSTGRES_USER: medusa
           POSTGRES_PASSWORD: medusa
@@ -27,7 +27,7 @@ jobs:
           --health-timeout 3s
           --health-retries 30
       redis:
-        image: redis:7.4.9-alpine
+        image: redis:7.4.12-alpine
         ports:
           - 6379:6379
         options: >-

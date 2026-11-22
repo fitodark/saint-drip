@@ -6,7 +6,7 @@
 ## Stack (resumen — no cambiar)
 
 - Node.js 24.22.3 (`.nvmrc`), npm 11.19.1, un proyecto npm por app con `--prefix` (sin workspaces).
-- Backend `apps/backend`: Medusa 2.23.0 (Postgres 17.9, Redis 7.4.9 vía `docker-compose.yml`), Jest 29 (del scaffold) + `@medusajs/test-utils` 2.23.0.
+- Backend `apps/backend`: Medusa 2.23.0 (Postgres 17.12, Redis 7.4.12 vía `docker-compose.yml`), Jest 29 (del scaffold) + `@medusajs/test-utils` 2.23.0.
 - Storefront `apps/storefront`: Next.js 16.3.8 Starter de Medusa (versiones del starter), Tailwind con los tokens de diseño.
 - Integraciones con modo `mock` determinista: Stripe (tarjeta) · SPEI propio (Stripe) · PayPal propio · Envia.com propio · FacturAPI · Resend.
 - Montos en unidades mayores (`1299` = $1,299.00 MXN), IVA incluido; centavos solo al llamar a Stripe.
@@ -28,7 +28,7 @@ saint-drip/
   docker-compose.yml  playwright.config.ts  package.json  .nvmrc  .gitignore
   scripts/{merge-scaffold,write-storefront-env,with-server,store-check}.mjs
   e2e/{fixtures/,helpers/admin.ts,*.spec.ts}
-  apps/backend/{medusa-config.ts,jest.config.js,.env.example,.env.test,instrumentation.ts}
+  apps/backend/{medusa-config.ts,jest.config.js,tsconfig.json,.env.example,.env.test,instrumentation.ts}
   apps/backend/integration-tests/{setup.js,http/*.spec.ts}
   apps/backend/src/{scripts,lib,workflows,api,admin,modules,jobs,subscribers}/
   apps/storefront/{scripts/check-tokens.mjs,tailwind.config.js,src/}

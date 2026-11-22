@@ -5,7 +5,7 @@
 > Runtime track: TypeScript / Node.js · `knowledge/runtime-tracks/ts-node.md` (con desviaciones documentadas en §20.3)
 > Emission mode: bundle (18 pasos)
 > Blueprint version: 1
-> Versions last verified: 2026-11-21 — ver §11 para la procedencia de cada paquete
+> Versions last verified: 2026-11-21 (/architect-refresh con stack-researcher en vivo) — ver §11 para la procedencia de cada paquete
 
 ---
 
@@ -137,6 +137,7 @@ saint-drip/                                   # raíz del proyecto = raíz del r
       medusa-config.ts                        # scaffold; reescrito completo en paso 2; editado en 6,7,8,9,12
       instrumentation.ts                      # scaffold; reemplazado en paso 18 — Sentry
       jest.config.js                          # workspace
+      tsconfig.json                           # workspace — types jest/node y exclude src/admin (§19.6)
       .env.example  .env.test  .gitignore     # workspace
       integration-tests/setup.js              # workspace
       integration-tests/http/
@@ -158,6 +159,7 @@ saint-drip/                                   # raíz del proyecto = raíz del r
         api/admin/catalog-import/[accion]/route.ts   # paso 4
         api/store/invoices/route.ts           # paso 10
         api/store/invoices/[id]/pdf/route.ts  # paso 10
+        admin/tsconfig.json                   # scaffold — lo usa el script typecheck (tsc -p src/admin/tsconfig.json)
         admin/lib/sdk.ts                      # paso 5
         admin/routes/carga-masiva/page.tsx    # paso 5
         modules/spei-payment/                 # paso 6 — index.ts service.ts __tests__/spei.unit.spec.ts
@@ -191,6 +193,7 @@ saint-drip/                                   # raíz del proyecto = raíz del r
       src/modules/checkout/components/shipping/index.tsx        # scaffold; editado en paso 16 (oculta opciones que fallan)
       src/modules/order/templates/order-completed-template.tsx  # scaffold; editado en paso 16 (instrucciones SPEI)
       src/modules/order/components/invoice-request/index.tsx    # paso 17
+      src/lib/data/invoices.ts                # paso 17 — server action solicitarFactura (fetch; ver §20.3 #17)
       src/modules/order/templates/order-details-template.tsx    # scaffold; editado en paso 17
   blueprints/saint-drip/                      # este bundle (se commitea; ninguna herramienta lo recorre — §19.6)
 ```
@@ -199,7 +202,7 @@ saint-drip/                                   # raíz del proyecto = raíz del r
 - `apps/backend/src/lib/**` es TypeScript puro: no importa `@medusajs/*` salvo tipos. Así lo prueban los tests unitarios sin base de datos y lo puede importar el admin (Vite).
 - `apps/backend/src/modules/<x>/gateway.ts` es el **único** lugar que habla con la API externa (PayPal, Envia, FacturAPI). Los `service.ts` reciben el gateway por constructor para que los tests lo reemplacen. El SPEI usa el cliente `stripe` inyectado de la misma forma.
 - Toda escritura de catálogo en la carga masiva pasa por `workflows/import-catalog.ts`; las rutas nunca llaman servicios de módulo para escribir.
-- El storefront solo habla con Medusa por `@medusajs/js-sdk` (helpers del starter en `src/lib/data/*`). Nunca lee la base de datos.
+- El storefront solo habla con Medusa por `@medusajs/js-sdk` (helpers del starter en `src/lib/data/*`), salvo las rutas propias (`/store/invoices*`), que usan `fetch` en la server action `apps/storefront/src/lib/data/invoices.ts` porque `FetchError` de `@medusajs/js-sdk` descarta `{ codigo, mensaje }` (§20.3 #17). Nunca lee la base de datos.
 - Montos: Medusa v2 guarda importes en **unidades mayores** (`1299` = $1,299.00 MXN) con precisión BigNumber. La conversión a centavos ocurre **solo** dentro de `gateway.ts` o de `service.ts` del proveedor, justo antes de llamar a Stripe (`Math.round(Number(monto) * 100)`).
 - Convención de imports: **NOT APPLICABLE**. Este blueprint no impone forma de especificadores ni alias; cada app conserva la configuración de su scaffold (ver §19.6, matriz de resolución).
 
@@ -622,7 +625,7 @@ previo.
 | 14 | Sistema de diseño en el storefront | 1 | tailwind, globals, layout, WhatsApp, check-tokens | build + cero hex fuera de tokens |
 | 15 | Inicio por categorías, PDP con JSON-LD, a11y | 5, 8, 14 | página de inicio, carriles, JSON-LD, 2 E2E | precio en HTML sin JS + 0 violaciones axe |
 | 16 | Checkout México: SPEI, PayPal, tarjeta, Envia | 6, 7, 8, 15 | constants, payment-button, PayPal, instrucciones SPEI, E2E | pedido SPEI muestra CLABE y total $1,448.00 |
-| 17 | Cuenta: solicitar factura | 10, 16 | invoice-request, order-details, E2E | cliente obtiene el UUID en la UI |
+| 17 | Cuenta: solicitar factura | 10, 16 | invoice-request, server action `lib/data/invoices.ts`, order-details, E2E | cliente obtiene el UUID en la UI |
 | 18 | Endurecimiento: Sentry, vencimiento SPEI, conciliación, CI | 6, 13 | instrumentation, job, reconciliación, test, CI | gate global §20.1 |
 
 ---
@@ -646,7 +649,6 @@ import { medusaIntegrationTestRunner } from "@medusajs/test-utils"
 jest.setTimeout(120 * 1000)
 
 medusaIntegrationTestRunner({
-  inApp: true,
   env: {},
   testSuite: ({ api }) => {
     describe("GET /health", () => {
@@ -796,7 +798,7 @@ export default defineConfig({
    - `{}` incluye `STRIPE_API_KEY` y `SPEI_MODE`;
    - un entorno completo y válido devuelve `[]`;
    - `JWT_SECRET` de 10 caracteres hace que aparezca `JWT_SECRET`.
-4. Crea `apps/backend/integration-tests/http/store-setup.spec.ts`: con `medusaIntegrationTestRunner({ inApp: true, env: {}, testSuite: ({ getContainer }) => … })`, llama dos veces `await seedSaintDrip({ container: getContainer(), args: [] } as any)` (import default de `../../src/scripts/seed-saint-drip`) y afirma:
+4. Crea `apps/backend/integration-tests/http/store-setup.spec.ts`: con `medusaIntegrationTestRunner({ env: {}, testSuite: ({ getContainer }) => … })`, llama dos veces `await seedSaintDrip({ container: getContainer(), args: [] } as any)` (import default de `../../src/scripts/seed-saint-drip`) y afirma:
    - 1 región "México" con `currency_code` `mxn`;
    - las 5 categorías por handle;
    - 1 stock location "Almacén Principal";
@@ -1442,7 +1444,7 @@ git tag step-16-checkout
 **Do**
 - `apps/storefront/src/modules/order/components/invoice-request/index.tsx` (cliente con server action):
   - Formulario "Solicitar factura" con campos etiquetados `RFC`, `Razón social`, `Régimen fiscal` (select con 601, 603, 605, 606, 612, 616, 621, 626), `Código postal` y `Uso del CFDI` (select con G01, G03, S01).
-  - Hace `POST /store/invoices` con `sdk.client.fetch` y los headers de auth del starter.
+  - Hace `POST /store/invoices` con una server action `solicitarFactura` en `apps/storefront/src/lib/data/invoices.ts` (`fetch` con `getAuthHeaders()` y `x-publishable-api-key`). Devuelve `{ ok, id, uuid }` o `{ ok: false, codigo, mensaje }`. No usa `sdk.client.fetch`, porque su `FetchError` solo conserva `message` y las rutas propias responden `{ codigo, mensaje }`.
   - Si sale bien, muestra `Factura emitida` y el uuid, con el enlace "Descargar PDF" a `/store/invoices/<id>/pdf`. Si falla, muestra el `mensaje` en `role="alert"`.
   - Mientras envía, el botón dice "Timbrando…".
 - `apps/storefront/src/modules/order/templates/order-details-template.tsx`: renderiza `<InvoiceRequest orderId={order.id} />` debajo del resumen del pedido.
@@ -1477,7 +1479,7 @@ git tag step-17-cuenta
 #### Step 18 — Endurecimiento: Sentry, vencimiento SPEI, conciliación y CI
 
 **Do**
-- `apps/backend/instrumentation.ts` (existe en el scaffold; reemplaza su contenido completo): `export function register() { if (!process.env.SENTRY_DSN) return; Sentry.init({ dsn: process.env.SENTRY_DSN, environment: process.env.NODE_ENV, tracesSampleRate: 0.1, sendDefaultPii: false }) }`, con `import * as Sentry from "@sentry/node"`. Medusa carga `instrumentation.ts` desde la raíz del backend al arrancar.
+- `apps/backend/instrumentation.ts` (existe en el scaffold; reemplaza su contenido completo): `export function register() { if (!process.env.SENTRY_DSN) return; Sentry.init({ dsn: process.env.SENTRY_DSN, environment: process.env.NODE_ENV, tracesSampleRate: 0.1, dataCollection: { userInfo: false, cookies: false, httpHeaders: false, httpBodies: [], urlQueryParams: false, databaseQueryData: false } }) }`, con `import * as Sentry from "@sentry/node"`. En `@sentry/node` 11 no existe `sendDefaultPii`: `dataCollection` lo reemplaza, y sus valores por defecto recolectan todo. Medusa carga `instrumentation.ts` desde la raíz del backend al arrancar.
 - `apps/backend/src/lib/reconciliacion.ts` (puro):
   - `export function speiVencidos(pagos: { order_id: string; provider_id: string; captured: boolean; vence_en: string }[], ahora: Date): string[]` devuelve los `order_id` SPEI no capturados con `vence_en < ahora`.
   - `export function pedidosSinPago(pedidos: { id: string; created_at: Date; tiene_pago_capturado: boolean; proveedor: string }[], ahora: Date): string[]` devuelve los pedidos con tarjeta o PayPal sin pago capturado después de 1 hora.
@@ -1491,7 +1493,7 @@ git tag step-17-cuenta
   3. Un SPEI no vencido se excluye.
   4. Un pedido con tarjeta sin pago después de 2 h se incluye en `pedidosSinPago`.
 - `.github/workflows/ci.yml`. Al hacer push o PR a `main`, corre en `ubuntu-latest` con Node `24.22.3` (`actions/setup-node` con `node-version-file: .nvmrc`):
-  - **Servicios:** `postgres:17.9-alpine` (usuario y password `medusa`, base `saint_drip`, puerto 5432, con health-cmd `pg_isready`) y `redis:7.4.9-alpine` en el 6379.
+  - **Servicios:** `postgres:17.12-alpine` (usuario y password `medusa`, base `saint_drip`, puerto 5432, con health-cmd `pg_isready`) y `redis:7.4.12-alpine` en el 6379.
   - **Pasos:** `cp apps/backend/.env.example apps/backend/.env`, `npm ci`, `npm --prefix apps/backend ci`, `npm --prefix apps/storefront ci` y `npx playwright install --with-deps chromium`.
   - **Después:** `npm --prefix apps/backend run db:migrate`, `npm --prefix apps/backend run seed`, `node scripts/write-storefront-env.mjs` y los comandos del gate global de §20.1 en ese orden.
 
@@ -1505,7 +1507,7 @@ git tag step-17-cuenta
 ```bash
 npm --prefix apps/backend run test:unit -- src/lib/__tests__/reconciliacion.unit.spec.ts   # expect: exit 0, 4 passed
 npm --prefix apps/backend run typecheck && npm --prefix apps/backend run build     # expect: exit 0
-test -f .github/workflows/ci.yml && grep -q 'postgres:17.9-alpine' .github/workflows/ci.yml   # expect: exit 0
+test -f .github/workflows/ci.yml && grep -q 'postgres:17.12-alpine' .github/workflows/ci.yml   # expect: exit 0
 npm --prefix apps/backend run test:unit                                            # expect: exit 0, 0 failed — todos los unit
 npm --prefix apps/backend run test:integration:http                                # expect: exit 0, 0 failed — todos los http
 npm run test:e2e                                                                   # expect: exit 0, 0 failed — todos los E2E
@@ -1604,7 +1606,7 @@ con su key). En producción, `assertProductionEnv` (paso 2) exige todo lo marcad
 | `apps/backend/.env.example`, `apps/storefront/.env.example` | Documentan cada variable | `!.env.example` después de `.env` en `.gitignore` raíz y en los de cada app |
 | `apps/backend/.env.test` | Valores locales no secretos para Jest | `!.env.test` en `.gitignore` raíz y en `apps/backend/.gitignore` |
 | `package-lock.json`, `apps/backend/package-lock.json`, `apps/storefront/package-lock.json` | Instalación reproducible (`npm ci` en CI) | — no lo cubre ningún patrón de ignore |
-| `docker-compose.yml`, `playwright.config.ts`, `apps/backend/jest.config.js`, `apps/backend/integration-tests/setup.js`, `scripts/*.mjs`, `.nvmrc` | Configs que usan los gates | — no lo cubre ningún patrón de ignore |
+| `docker-compose.yml`, `playwright.config.ts`, `apps/backend/jest.config.js`, `apps/backend/tsconfig.json`, `apps/backend/integration-tests/setup.js`, `scripts/*.mjs`, `.nvmrc` | Configs que usan los gates | — no lo cubre ningún patrón de ignore |
 | Fixtures `apps/backend/src/lib/catalog-import/__fixtures__/*.xlsx`, `e2e/fixtures/**` | Entradas de los tests | — no lo cubre ningún patrón de ignore |
 | `apps/backend/src/modules/facturapi/migrations/*` | Esquema reproducible | — no lo cubre ningún patrón de ignore |
 | `CLAUDE.md`, `AGENTS.md`, `.claude/**`, `blueprints/saint-drip/**`, `docs/**` | Configuración del agente y diseño | — no lo cubre ningún patrón de ignore |
@@ -1645,7 +1647,7 @@ npm --prefix apps/storefront pkg set "dependencies.@medusajs/js-sdk=2.23.0" \
 npm --prefix apps/backend pkg set \
   "scripts.dev=medusa develop" "scripts.build=medusa build" "scripts.start=medusa start" \
   "scripts.predeploy=medusa db:migrate" \
-  "scripts.typecheck=tsc --noEmit" \
+  "scripts.typecheck=tsc --noEmit && tsc --noEmit -p src/admin/tsconfig.json" \
   "scripts.db:migrate=medusa db:migrate" "scripts.db:generate=medusa db:generate" \
   "scripts.seed=medusa exec ./src/scripts/seed-saint-drip.ts" \
   "scripts.print-key=medusa exec ./src/scripts/print-publishable-key.ts" \
@@ -1699,8 +1701,8 @@ Verificado en vivo el 2026-11-21 con `npm view <pkg> dist-tags` (registro npm), 
 | @sentry/node | 11.16.0 | https://registry.npmjs.org/@sentry/node (latest) | 2026-11-21 | §10 Bootstrap | Errores del backend |
 | @paypal/react-paypal-js | 10.6.1 | https://registry.npmjs.org/@paypal/react-paypal-js (latest) | 2026-11-21 | §10 Bootstrap | Botones PayPal en el checkout |
 | next · react · react-dom · tailwindcss (storefront) | los del starter: next 16.3.8, react 19.0.5, tailwindcss ^3.0.23 | observado en `apps/storefront/package.json` generado por create-medusa-app 2.23.0 `--with-nextjs-starter` el 2026-11-21 (smoke test) | 2026-11-21 | §10 Bootstrap (scaffold) | Storefront. No se actualizan en v1 (§20.3 #3) |
-| postgres (imagen) | 17.9-alpine | https://hub.docker.com/v2/repositories/library/postgres/tags | 2026-11-21 | `docker-compose.yml`, `.github/workflows/ci.yml` | Base de datos local y de CI |
-| redis (imagen) | 7.4.9-alpine | https://hub.docker.com/v2/repositories/library/redis/tags | 2026-11-21 | `docker-compose.yml`, `.github/workflows/ci.yml` | Redis local y de CI |
+| postgres (imagen) | 17.12-alpine | https://hub.docker.com/v2/repositories/library/postgres/tags?name=17. (refresh: 17.9 → 17.12) | 2026-11-21 | `docker-compose.yml`, `.github/workflows/ci.yml` | Base de datos local y de CI |
+| redis (imagen) | 7.4.12-alpine | https://hub.docker.com/v2/repositories/library/redis/tags?name=7.4 (refresh: 7.4.9 → 7.4.12) | 2026-11-21 | `docker-compose.yml`, `.github/workflows/ci.yml` | Redis local y de CI |
 
 ### Development
 | Package | Version | Source (registry URL or track file) | Checked | Installed by | Purpose |
@@ -1708,6 +1710,7 @@ Verificado en vivo el 2026-11-21 con `npm view <pkg> dist-tags` (registro npm), 
 | @medusajs/test-utils | 2.23.0 | https://registry.npmjs.org/@medusajs/test-utils (peers medusa/framework/core-flows 2.23.0) | 2026-11-21 | §10 Bootstrap | `medusaIntegrationTestRunner` |
 | jest | ^29.7.0 (la del scaffold) | observado en `apps/backend/package.json` generado por create-medusa-app 2.23.0 el 2026-11-21; npm `latest` es 30.5.2 pero no se sube porque `@medusajs/test-utils` 2.23.0 se publica con el scaffold en 29 | 2026-11-21 | §10 Bootstrap (scaffold + `npm --prefix apps/backend install`) | Runner de tests del backend |
 | @types/jest | ^29.5.13 (la del scaffold) | `apps/backend/package.json` del scaffold, 2026-11-21 | 2026-11-21 | §10 Bootstrap (scaffold) | Tipos de Jest |
+| @types/node | ^20.12.11 (la del scaffold) | `apps/backend/package.json` del scaffold, 2026-11-21 | 2026-11-21 | §10 Bootstrap (scaffold) | Tipos de Node; los nombra el `"types"` de `workspace/apps/backend/tsconfig.json` |
 | @swc/jest | ^0.2.36 (la del scaffold; resuelve a 0.2.39, latest) | `apps/backend/package.json` del scaffold + https://registry.npmjs.org/@swc/jest | 2026-11-21 | §10 Bootstrap (scaffold) | Transformación TS en Jest |
 | cross-env | 10.1.0 | https://registry.npmjs.org/cross-env (latest; engines node >=20) | 2026-11-21 | §10 Bootstrap | Variables en scripts npm también en Windows |
 | @playwright/test | 1.65.1 | https://registry.npmjs.org/@playwright/test (latest) | 2026-11-21 | `package.json` raíz (workspace) + `npm install` en §10 | E2E |
@@ -1812,7 +1815,7 @@ Es el mismo gate que §20.1. Railway y Vercel despliegan `main` de forma automá
 | Dependency audit | `npm audit --omit=dev --audit-level=high` en cada app, mensual; lo corrige quien mantiene | CI (manual en v1) |
 | Security headers | En Vercel (`next.config.js` del storefront, paso 18 o lanzamiento): `Strict-Transport-Security: max-age=63072000; includeSubDomains; preload`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `X-Frame-Options: DENY`. La CSP en modo report-only en v1, porque PayPal y Stripe cargan scripts propios | checklist §20.1 |
 | PII handling | Nombre, email, teléfono, dirección y RFC en Postgres (Railway, cifrado en reposo). Las tarjetas nunca tocan el servidor (Stripe Elements y PayPal). Borrado a petición (§8) | — |
-| Logging hygiene | Nunca se registran el body de los webhooks, las llaves ni el RFC completo; Sentry con `sendDefaultPii: false` | pasos 6, 7 y 18 |
+| Logging hygiene | Nunca se registran el body de los webhooks, las llaves ni el RFC completo; Sentry con `dataCollection` apagado (`userInfo`, `cookies`, `httpHeaders`, `httpBodies`, `urlQueryParams`, `databaseQueryData`) | pasos 6, 7 y 18 |
 
 **Hard rules**
 - No secret is ever committed, printed in a log, sent to an error tracker, or embedded in a client bundle. Anything reaching the browser is public — treat it that way.
@@ -1946,7 +1949,7 @@ workspace/
 ├── scripts/merge-scaffold.mjs  scripts/write-storefront-env.mjs  scripts/with-server.mjs  scripts/store-check.mjs
 ├── docs/plantilla-catalogo-saint-drip.xlsx
 ├── e2e/fixtures/plantilla-valida.xlsx  e2e/fixtures/fotos/{4 jpg}
-├── apps/backend/{.gitignore,.env.example,.env.test,jest.config.js}
+├── apps/backend/{.gitignore,.env.example,.env.test,jest.config.js,tsconfig.json}
 ├── apps/backend/integration-tests/setup.js
 ├── apps/backend/src/scripts/{seed-saint-drip.ts,print-publishable-key.ts}
 ├── apps/backend/src/lib/catalog-import/__fixtures__/{plantilla-valida.xlsx,plantilla-con-errores.xlsx}
@@ -1995,7 +1998,7 @@ subcomando por subcomando, y niega leer `.env`, `git push` y borrar volúmenes.
 | `scripts/merge-scaffold.mjs`, `scripts/write-storefront-env.mjs` | `scripts/` | §10 Bootstrap | — | n/a — this tool never walks the tree |
 | `seed-saint-drip.ts`, `print-publishable-key.ts` | `apps/backend/src/scripts/` | §10, 1, 2, 4, 6, 7, 8, 10 | se ejecutan con `medusa exec` (el entorno viene de `medusa-config.ts`) | n/a |
 | Fixtures xlsx / jpg | `apps/backend/src/lib/catalog-import/__fixtures__/`, `e2e/fixtures/` | 3, 4, 5, 15, 16, 17 | — | n/a |
-| tsconfig de cada app | del scaffold | `typecheck` | `tsc` solo recorre `apps/<app>`; `blueprints/` está fuera de ambas raíces | n/a — `blueprints/` no está bajo `apps/backend` ni `apps/storefront` |
+| tsconfig de cada app | storefront: del scaffold · backend: `workspace/apps/backend/tsconfig.json` (el workspace gana sobre el scaffold) | `typecheck` | `tsc` solo recorre `apps/<app>`; `blueprints/` está fuera de ambas raíces. Backend: `"types": ["jest", "node"]`, porque TypeScript 6 cambió el valor por defecto de `types` a `[]`. Además excluye `src/admin`, que usa `import.meta` y que el script `typecheck` revisa con su propio `src/admin/tsconfig.json` | n/a — `blueprints/` no está bajo `apps/backend` ni `apps/storefront` |
 
 **El bundle dentro del proyecto:** `blueprints/` cuelga de la raíz. Jest y Playwright lo excluyen de
 forma literal (tabla arriba). `tsc` y `next build` trabajan dentro de cada `apps/<app>` y nunca lo ven.
@@ -2025,7 +2028,7 @@ desde el admin) son relativas comunes, válidas en todos los cargadores.
 | Salida del build del backend | `medusa build` | `apps/backend/.medusa/server` | paso 2 Verify · §12 start command · `.gitignore` `.medusa/` | yes |
 | Número de WhatsApp | `apps/storefront/.env.example` | `529531720664` | paso 14 Verify | yes |
 | Versión de Node | `.nvmrc` | `24.22.3` | `package.json` engines `>=24.22.3` · §10 · §11 · `ci.yml` | yes |
-| Imágenes | `docker-compose.yml` | `postgres:17.9-alpine`, `redis:7.4.9-alpine` | `ci.yml` · §11 · paso 18 Verify | yes |
+| Imágenes | `docker-compose.yml` | `postgres:17.12-alpine`, `redis:7.4.12-alpine` | `ci.yml` · §11 · paso 18 Verify | yes |
 
 #### Byte-exact artifact reconciliation
 | Byte-exact artifact | Authored by | First diffed at | Blueprint rules that constrain it | Runtime call that produces it, on the §11 pin | Both confirmed |
@@ -2116,6 +2119,11 @@ hides inside it.
 | 10 | Railway (server + worker) + Vercel | Medusa Cloud | Costo menor a este volumen; Medusa Cloud es de pago | El costo de operar supera al de Medusa Cloud |
 | 11 | Resend como proveedor propio de notificaciones | SendGrid (proveedor oficial de Medusa) | Plantillas en código y probadas; SDK mínimo; capa gratuita suficiente | Resend deja de cubrir el volumen o el dominio tiene problemas de entrega |
 | 12 | Tokens de color fijados aquí (minimal urbano) | Copiar el catálogo actual | El catálogo actual se renderiza en el cliente y no se pudieron leer sus estilos | La marca entrega un manual de identidad |
+| 13 | Decision: bumped postgres (imagen) 17.9-alpine→17.12-alpine | Quedarse en 17.9 | Why: registry drift, verified 2026-11-21 (tres parches; misma mayor, el formato de datos es compatible) | Would reverse if: la migración resulta costosa (un parche de 17.x rompe el volumen local o el de CI) |
+| 14 | Decision: bumped redis (imagen) 7.4.9-alpine→7.4.12-alpine | Quedarse en 7.4.9 | Why: registry drift, verified 2026-11-21 (tres parches de la línea 7.4) | Would reverse if: la migración resulta costosa (un parche de 7.4 cambia el comportamiento de BullMQ o del event bus) |
+| 15 | Decision: hold jest 29 / @types/jest 29 (latest 30.5.2 / 30.0.0) y typescript 6 (latest 7.0.2) | Subir a jest 30 y TS 7 | Why: `@medusajs/test-utils` 2.23.0 se publica con jest 29; TS 7 es la reescritura en Go y no se verificó que Medusa 2.23 lo acepte (verified 2026-11-21) | Would reverse if: Medusa publique el scaffold con jest 30 / TS 7 |
+| 16 | Decision: hold Node 24.22.3 (ya existe la LTS 26.13.1) | Node 26 | Why: el runtime track no cambia en un refresh; Medusa 2.23 pide `>=22.22.0` (verified 2026-11-21) | Would reverse if: Medusa recomiende Node 26 o la 24 salga de mantenimiento |
+| 17 | Decision: migraciones de API sobre los mismos pins: sin `inApp` en `medusaIntegrationTestRunner` (test-utils 2.23); `types: ["jest","node"]` y `exclude: src/admin` en el tsconfig del backend (TS 6; nuevo `workspace/apps/backend/tsconfig.json`); `typecheck` = `tsc --noEmit && tsc --noEmit -p src/admin/tsconfig.json`; server action `apps/storefront/src/lib/data/invoices.ts` en lugar de `sdk.client.fetch` (js-sdk 2.23: `FetchError` solo lee `message`); Sentry con `dataCollection` en lugar de `sendDefaultPii` (@sentry/node 11) | Texto original del blueprint | Why: las APIs publicadas de las versiones fijadas no coinciden con el texto; se reprodujeron durante el build: `TS2353` por `inApp`; `Cannot find name 'jest'` por el `types: []` de TS 6; `TS1470` por `import.meta` en `src/admin` bajo CommonJS; un 409 mostrado como "Conflict" porque `FetchError` solo lee `message`; y `TS2353` por `sendDefaultPii`. Se confirmaron en los artefactos de unpkg el 2026-11-21 | Would reverse if: se cambian los pins a versiones donde la API original existe |
 
 ### 20.4 What to build next
 1. **Cupones y promociones de temporada**, cuando llegue la primera campaña con código.

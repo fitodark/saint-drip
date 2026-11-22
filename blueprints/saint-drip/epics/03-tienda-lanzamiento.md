@@ -6,7 +6,7 @@
 ## Stack (resumen — no cambiar)
 
 - Node.js 24.22.3 (`.nvmrc`), npm 11.19.1, un proyecto npm por app con `--prefix` (sin workspaces).
-- Backend `apps/backend`: Medusa 2.23.0 (Postgres 17.9, Redis 7.4.9 vía `docker-compose.yml`), Jest 29 (del scaffold) + `@medusajs/test-utils` 2.23.0.
+- Backend `apps/backend`: Medusa 2.23.0 (Postgres 17.12, Redis 7.4.12 vía `docker-compose.yml`), Jest 29 (del scaffold) + `@medusajs/test-utils` 2.23.0.
 - Storefront `apps/storefront`: Next.js 16.3.8 Starter de Medusa (versiones del starter), Tailwind con los tokens de diseño.
 - Integraciones con modo `mock` determinista: Stripe (tarjeta) · SPEI propio (Stripe) · PayPal propio · Envia.com propio · FacturAPI · Resend.
 - Montos en unidades mayores (`1299` = $1,299.00 MXN), IVA incluido; centavos solo al llamar a Stripe.
@@ -28,7 +28,7 @@ saint-drip/
   docker-compose.yml  playwright.config.ts  package.json  .nvmrc  .gitignore
   scripts/{merge-scaffold,write-storefront-env,with-server,store-check}.mjs
   e2e/{fixtures/,helpers/admin.ts,*.spec.ts}
-  apps/backend/{medusa-config.ts,jest.config.js,.env.example,.env.test,instrumentation.ts}
+  apps/backend/{medusa-config.ts,jest.config.js,tsconfig.json,.env.example,.env.test,instrumentation.ts}
   apps/backend/integration-tests/{setup.js,http/*.spec.ts}
   apps/backend/src/{scripts,lib,workflows,api,admin,modules,jobs,subscribers}/
   apps/storefront/{scripts/check-tokens.mjs,tailwind.config.js,src/}
@@ -201,6 +201,7 @@ git tag step-16-checkout
 
 **Files**
 - `apps/storefront/src/modules/order/components/invoice-request/index.tsx`
+- `apps/storefront/src/lib/data/invoices.ts`
 - `apps/storefront/src/modules/order/templates/order-details-template.tsx`
 - `e2e/cuenta-factura.spec.ts`
 - `e2e/helpers/admin.ts`
@@ -209,7 +210,7 @@ git tag step-16-checkout
 
 - `apps/storefront/src/modules/order/components/invoice-request/index.tsx` (cliente con server action):
   - Formulario "Solicitar factura" con campos etiquetados `RFC`, `Razón social`, `Régimen fiscal` (select con 601, 603, 605, 606, 612, 616, 621, 626), `Código postal` y `Uso del CFDI` (select con G01, G03, S01).
-  - Hace `POST /store/invoices` con `sdk.client.fetch` y los headers de auth del starter.
+  - Hace `POST /store/invoices` con una server action `solicitarFactura` en `apps/storefront/src/lib/data/invoices.ts` (`fetch` con `getAuthHeaders()` y `x-publishable-api-key`). Devuelve `{ ok, id, uuid }` o `{ ok: false, codigo, mensaje }`. No usa `sdk.client.fetch`, porque su `FetchError` solo conserva `message` y las rutas propias responden `{ codigo, mensaje }`.
   - Si sale bien, muestra `Factura emitida` y el uuid, con el enlace "Descargar PDF" a `/store/invoices/<id>/pdf`. Si falla, muestra el `mensaje` en `role="alert"`.
   - Mientras envía, el botón dice "Timbrando…".
 - `apps/storefront/src/modules/order/templates/order-details-template.tsx`: renderiza `<InvoiceRequest orderId={order.id} />` debajo del resumen del pedido.
@@ -255,7 +256,7 @@ git tag step-17-cuenta
 
 **Do**
 
-- `apps/backend/instrumentation.ts` (existe en el scaffold; reemplaza su contenido completo): `export function register() { if (!process.env.SENTRY_DSN) return; Sentry.init({ dsn: process.env.SENTRY_DSN, environment: process.env.NODE_ENV, tracesSampleRate: 0.1, sendDefaultPii: false }) }`, con `import * as Sentry from "@sentry/node"`. Medusa carga `instrumentation.ts` desde la raíz del backend al arrancar.
+- `apps/backend/instrumentation.ts` (existe en el scaffold; reemplaza su contenido completo): `export function register() { if (!process.env.SENTRY_DSN) return; Sentry.init({ dsn: process.env.SENTRY_DSN, environment: process.env.NODE_ENV, tracesSampleRate: 0.1, dataCollection: { userInfo: false, cookies: false, httpHeaders: false, httpBodies: [], urlQueryParams: false, databaseQueryData: false } }) }`, con `import * as Sentry from "@sentry/node"`. En `@sentry/node` 11 no existe `sendDefaultPii`: `dataCollection` lo reemplaza, y sus valores por defecto recolectan todo. Medusa carga `instrumentation.ts` desde la raíz del backend al arrancar.
 - `apps/backend/src/lib/reconciliacion.ts` (puro):
   - `export function speiVencidos(pagos: { order_id: string; provider_id: string; captured: boolean; vence_en: string }[], ahora: Date): string[]` devuelve los `order_id` SPEI no capturados con `vence_en < ahora`.
   - `export function pedidosSinPago(pedidos: { id: string; created_at: Date; tiene_pago_capturado: boolean; proveedor: string }[], ahora: Date): string[]` devuelve los pedidos con tarjeta o PayPal sin pago capturado después de 1 hora.
@@ -269,7 +270,7 @@ git tag step-17-cuenta
   3. Un SPEI no vencido se excluye.
   4. Un pedido con tarjeta sin pago después de 2 h se incluye en `pedidosSinPago`.
 - `.github/workflows/ci.yml`. Al hacer push o PR a `main`, corre en `ubuntu-latest` con Node `24.22.3` (`actions/setup-node` con `node-version-file: .nvmrc`):
-  - **Servicios:** `postgres:17.9-alpine` (usuario y password `medusa`, base `saint_drip`, puerto 5432, con health-cmd `pg_isready`) y `redis:7.4.9-alpine` en el 6379.
+  - **Servicios:** `postgres:17.12-alpine` (usuario y password `medusa`, base `saint_drip`, puerto 5432, con health-cmd `pg_isready`) y `redis:7.4.12-alpine` en el 6379.
   - **Pasos:** `cp apps/backend/.env.example apps/backend/.env`, `npm ci`, `npm --prefix apps/backend ci`, `npm --prefix apps/storefront ci` y `npx playwright install --with-deps chromium`.
   - **Después:** `npm --prefix apps/backend run db:migrate`, `npm --prefix apps/backend run seed`, `node scripts/write-storefront-env.mjs` y los comandos del gate global de §20.1 en ese orden.
 
@@ -283,7 +284,7 @@ git tag step-17-cuenta
 ```bash
 npm --prefix apps/backend run test:unit -- src/lib/__tests__/reconciliacion.unit.spec.ts   # expect: exit 0, 4 passed
 npm --prefix apps/backend run typecheck && npm --prefix apps/backend run build     # expect: exit 0
-test -f .github/workflows/ci.yml && grep -q 'postgres:17.9-alpine' .github/workflows/ci.yml   # expect: exit 0
+test -f .github/workflows/ci.yml && grep -q 'postgres:17.12-alpine' .github/workflows/ci.yml   # expect: exit 0
 npm --prefix apps/backend run test:unit                                            # expect: exit 0, 0 failed — todos los unit
 npm --prefix apps/backend run test:integration:http                                # expect: exit 0, 0 failed — todos los http
 npm run test:e2e                                                                   # expect: exit 0, 0 failed — todos los E2E

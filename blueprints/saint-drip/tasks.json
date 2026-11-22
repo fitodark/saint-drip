@@ -499,6 +499,7 @@
     "checkpoint": "step-17-cuenta",
     "files": [
       "apps/storefront/src/modules/order/components/invoice-request/index.tsx",
+      "apps/storefront/src/lib/data/invoices.ts",
       "apps/storefront/src/modules/order/templates/order-details-template.tsx",
       "e2e/cuenta-factura.spec.ts",
       "e2e/helpers/admin.ts"
@@ -523,7 +524,7 @@
     "verify": [
       "npm --prefix apps/backend run test:unit -- src/lib/__tests__/reconciliacion.unit.spec.ts",
       "npm --prefix apps/backend run typecheck && npm --prefix apps/backend run build",
-      "test -f .github/workflows/ci.yml && grep -q 'postgres:17.9-alpine' .github/workflows/ci.yml",
+      "test -f .github/workflows/ci.yml && grep -q 'postgres:17.12-alpine' .github/workflows/ci.yml",
       "npm --prefix apps/backend run test:unit",
       "npm --prefix apps/backend run test:integration:http",
       "npm run test:e2e"

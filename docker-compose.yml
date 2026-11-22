@@ -2,7 +2,7 @@
 # Image tags are version pins — provenance in blueprint §11.
 services:
   postgres:
-    image: postgres:17.9-alpine
+    image: postgres:17.12-alpine
     environment:
       POSTGRES_USER: medusa
       POSTGRES_PASSWORD: medusa
@@ -17,7 +17,7 @@ services:
       timeout: 3s
       retries: 30
   redis:
-    image: redis:7.4.9-alpine
+    image: redis:7.4.12-alpine
     ports:
       - "6379:6379"
     healthcheck:

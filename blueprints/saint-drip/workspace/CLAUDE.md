@@ -53,7 +53,7 @@ Los webhooks llegan a `/hooks/payment/{provider}` y Medusa captura el pago.
 | `apps/backend/src/modules/<x>/gateway.ts` | SDK del tercero | Ser llamado fuera de su `service.ts` |
 | `apps/backend/src/api/**` | workflows, `query.graph`, servicios para leer | Escribir catálogo sin workflow |
 | `apps/backend/src/admin/**` | `@medusajs/ui`, `@medusajs/admin-sdk`, `src/lib/catalog-import/photos.ts` | Importar código de Node (`fs`, `exceljs`) |
-| `apps/storefront/src/**` | `@medusajs/js-sdk` vía `src/lib/data` | Leer la base de datos o usar hex fuera de `src/styles/globals.css` |
+| `apps/storefront/src/**` | `@medusajs/js-sdk` vía `src/lib/data` (excepción: `/store/invoices*` con `fetch` en `src/lib/data/invoices.ts`, §20.3 #17) | Leer la base de datos o usar hex fuera de `src/styles/globals.css` |
 
 **Where things live.**
 

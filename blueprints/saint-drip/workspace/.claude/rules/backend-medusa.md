@@ -14,5 +14,5 @@ paths:
 - Validación de bodies con zod de `@medusajs/framework/zod`; los errores propios responden `{ codigo, mensaje }`.
 - Rutas store propias exigen `authenticate("customer", ["session","bearer"])` en `src/api/middlewares.ts`.
 - `medusa-config.ts` no lee una variable integradora como obligatoria fuera de producción; las obligatorias de producción se listan en `src/lib/env.ts`.
-- Nuevos tests: unit en `__tests__/*.unit.spec.ts`, HTTP en `integration-tests/http/*.spec.ts` con `medusaIntegrationTestRunner({ inApp: true, env: {} })`.
+- Nuevos tests: unit en `__tests__/*.unit.spec.ts`, HTTP en `integration-tests/http/*.spec.ts` con `medusaIntegrationTestRunner({ env: {} })` (`@medusajs/test-utils` 2.23 no tiene la opción `inApp`).
 - Jobs: `export const config = { name, schedule }` con cron en UTC (Ciudad de México = UTC−6 todo el año).
