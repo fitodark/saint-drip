@@ -80,7 +80,14 @@ test.describe.serial("Checkout México", () => {
   test("un invitado paga el hoodie M con Envío terrestre y SPEI y ve la CLABE", async ({ page }) => {
     test.setTimeout(240_000)
     await agregarAlCarrito(page, "sd-hoodie-oversize-negro", "M")
+
+    // D20: cupones son Non-Goal de v1 (§1); ni el carrito ni el checkout ofrecen código de descuento.
+    await page.goto("/mx/cart")
+    await expect(page.getByTestId("checkout-button")).toBeVisible({ timeout: 30_000 })
+    await expect(page.getByTestId("add-discount-button")).toHaveCount(0)
+
     await capturarDireccion(page)
+    await expect(page.getByTestId("add-discount-button")).toHaveCount(0)
 
     const terrestre = page.getByTestId("delivery-option-radio").filter({ hasText: "Envío terrestre" })
     await expect(terrestre).toContainText("149", { timeout: 30_000 })
