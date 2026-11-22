@@ -146,7 +146,7 @@ export default function ProductActions({
           {...{
             toolname: "add_to_cart",
             tooldescription:
-              "Add the selected product variant to the shopping cart",
+              "Agrega la opción seleccionada al carrito",
           }}
         >
           <input type="hidden" name="product_id" value={product.id} />
@@ -186,7 +186,7 @@ export default function ProductActions({
               className="text-small-regular text-ui-fg-subtle"
               data-testid="product-availability"
             >
-              {inStock ? "In stock" : "Out of stock"}
+              {inStock ? "Disponible" : "Agotado"}
             </p>
           )}
 
@@ -205,10 +205,10 @@ export default function ProductActions({
             data-testid="add-product-button"
           >
             {!selectedVariant
-              ? "Select variant"
+              ? "Selecciona una opción"
               : !inStock || !isValidVariant
-              ? "Out of stock"
-              : "Add to cart"}
+              ? "Agotado"
+              : "Agregar al carrito"}
           </Button>
         </form>
         <MobileActions

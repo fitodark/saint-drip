@@ -1,6 +1,7 @@
 import { expect, request as playwrightRequest, test, type Page } from "@playwright/test"
 import type { APIRequestContext } from "@playwright/test"
 import { BACKEND_URL, importarFixture, tokenAdmin } from "./helpers/admin"
+import { sinIngles } from "./helpers/idioma"
 
 // Cuenta del cliente (paso 17): registro, dirección, compra SPEI autenticada, captura y solicitud de CFDI.
 const UUID_MOCK = "00000000-0000-4000-8000-000000000001"
@@ -74,13 +75,13 @@ test.describe.serial("Cuenta: dirección y solicitud de factura", () => {
 
     // 1. Registro en /mx/account
     await page.goto("/mx/account")
-    await page.getByRole("button", { name: "Join us" }).click()
+    await page.getByRole("button", { name: "Crear cuenta" }).click()
     await page.getByTestId("first-name-input").fill(DIRECCION.nombre)
     await page.getByTestId("last-name-input").fill(DIRECCION.apellido)
     await page.getByTestId("email-input").fill(EMAIL)
     await page.getByTestId("phone-input").fill(DIRECCION.telefono)
     await page.getByTestId("password-input").fill(PASSWORD)
-    await page.getByRole("button", { name: "Join", exact: true }).click()
+    await page.getByRole("button", { name: "Crear cuenta" }).click()
     await expect(page.getByTestId("account-nav").first()).toBeVisible({ timeout: 30_000 })
 
     // 1b. Dirección guardada en /mx/account/addresses
@@ -134,6 +135,8 @@ test.describe.serial("Cuenta: dirección y solicitud de factura", () => {
     await expect(page.getByTestId("order-card").first()).toBeVisible({ timeout: 30_000 })
     await page.goto(`/mx/account/orders/details/${orderId}`)
     const formulario = page.getByTestId("invoice-request")
+    await expect(formulario).toBeVisible({ timeout: 30_000 })
+    await sinIngles(page, "detalle del pedido")
     await formulario.getByLabel("RFC").fill("XAXX010101000")
     await formulario.getByLabel("Razón social").fill("PUBLICO EN GENERAL")
     await formulario.getByLabel("Régimen fiscal").selectOption("616")

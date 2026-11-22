@@ -1,6 +1,7 @@
 import { defineRouteConfig } from "@medusajs/admin-sdk"
 import { Button, Container, Heading, Table, Text } from "@medusajs/ui"
 import { useMemo, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { emparejarFotos, PATRON_FOTO } from "../../../lib/catalog-import/photos"
 import { sdk } from "../../lib/sdk"
 
@@ -25,11 +26,11 @@ const leerBase64 = (archivo: File) =>
     lector.readAsDataURL(archivo)
   })
 
-const ListaFotos = ({ titulo, nombres }: { titulo: string; nombres: string[] }) => (
+const ListaFotos = ({ titulo, nombres, vacio }: { titulo: string; nombres: string[]; vacio: string }) => (
   <div className="flex flex-col gap-y-1">
     <Text weight="plus">{titulo}</Text>
     {nombres.length === 0 ? (
-      <Text className="text-ui-fg-subtle">Ninguna</Text>
+      <Text className="text-ui-fg-subtle">{vacio}</Text>
     ) : (
       <ul className="list-disc pl-5">
         {nombres.map((n) => (
@@ -43,6 +44,7 @@ const ListaFotos = ({ titulo, nombres }: { titulo: string; nombres: string[] }) 
 )
 
 const CargaMasivaPage = () => {
+  const { t } = useTranslation()
   const [excel, setExcel] = useState<File | null>(null)
   const [fotos, setFotos] = useState<File[]>([])
   const [reporte, setReporte] = useState<Reporte | null>(null)
@@ -73,7 +75,7 @@ const CargaMasivaPage = () => {
       setReporte(respuesta)
     } catch (e) {
       setReporte(null)
-      setFalla(e instanceof Error ? e.message : "No se pudo validar el archivo")
+      setFalla(e instanceof Error ? e.message : t("cargaMasiva.errorValidar"))
     } finally {
       setEstado("inactivo")
     }
@@ -97,7 +99,7 @@ const CargaMasivaPage = () => {
       setCreados(respuesta.creados)
       setReporte(null)
     } catch (e) {
-      setFalla(e instanceof Error ? e.message : "No se pudo importar el catálogo")
+      setFalla(e instanceof Error ? e.message : t("cargaMasiva.errorImportar"))
     } finally {
       setEstado("inactivo")
     }
@@ -106,23 +108,23 @@ const CargaMasivaPage = () => {
   return (
     <Container className="flex flex-col gap-y-6 p-6">
       <div className="flex items-center justify-between">
-        <Heading level="h1">Carga masiva</Heading>
+        <Heading level="h1">{t("cargaMasiva.titulo")}</Heading>
         <a
           href="/admin/catalog-import/plantilla"
           download
           className="text-ui-fg-interactive txt-compact-small-plus hover:underline"
         >
-          Descargar plantilla
+          {t("cargaMasiva.descargarPlantilla")}
         </a>
       </div>
 
       <div className="flex flex-col gap-y-4">
         <label className="flex flex-col gap-y-1">
-          <Text weight="plus">Excel</Text>
+          <Text weight="plus">{t("cargaMasiva.excel")}</Text>
           <input
             type="file"
             accept=".xlsx"
-            aria-label="Archivo Excel (.xlsx)"
+            aria-label={t("cargaMasiva.excelAria")}
             onChange={(e) => {
               setExcel(e.target.files?.[0] ?? null)
               setReporte(null)
@@ -131,12 +133,12 @@ const CargaMasivaPage = () => {
           />
         </label>
         <label className="flex flex-col gap-y-1">
-          <Text weight="plus">Fotos</Text>
+          <Text weight="plus">{t("cargaMasiva.fotos")}</Text>
           <input
             type="file"
             accept=".jpg,.jpeg"
             multiple
-            aria-label="Fotos (.jpg)"
+            aria-label={t("cargaMasiva.fotosAria")}
             onChange={(e) => {
               setFotos(Array.from(e.target.files ?? []))
               setReporte(null)
@@ -146,37 +148,37 @@ const CargaMasivaPage = () => {
         </label>
         {nombresMalFormados.length > 0 && (
           <Text className="text-ui-fg-error">
-            Estos nombres no siguen el formato {"{handle}-{n}.jpg"}: {nombresMalFormados.join(", ")}
+            {t("cargaMasiva.nombresMalFormados", { formato: "{handle}-{n}.jpg", nombres: nombresMalFormados.join(", "), interpolation: { escapeValue: false } })}
           </Text>
         )}
       </div>
 
       <div className="flex gap-x-2">
         <Button variant="secondary" onClick={validar} disabled={!excel || trabajando}>
-          {estado === "validando" ? "Validando…" : "Validar"}
+          {estado === "validando" ? t("cargaMasiva.validando") : t("cargaMasiva.validar")}
         </Button>
         <Button onClick={importar} disabled={!reporte?.valido || trabajando}>
-          {estado === "importando" ? "Importando…" : "Importar"}
+          {estado === "importando" ? t("cargaMasiva.importando") : t("cargaMasiva.importar")}
         </Button>
       </div>
 
       {falla && <Text className="text-ui-fg-error">{falla}</Text>}
 
-      {creados !== null && <Text weight="plus">{creados} productos creados</Text>}
+      {creados !== null && <Text weight="plus">{t("cargaMasiva.creados", { count: creados })}</Text>}
 
       {reporte && (
         <div className="flex flex-col gap-y-4">
           <Text weight="plus">
-            {reporte.productos} productos · {reporte.variantes} variantes
+            {t("cargaMasiva.resumen", { productos: reporte.productos, variantes: reporte.variantes })}
           </Text>
 
           {reporte.errores.length > 0 && (
             <Table>
               <Table.Header>
                 <Table.Row>
-                  <Table.HeaderCell>Fila</Table.HeaderCell>
-                  <Table.HeaderCell>Columna</Table.HeaderCell>
-                  <Table.HeaderCell>Error</Table.HeaderCell>
+                  <Table.HeaderCell>{t("cargaMasiva.fila")}</Table.HeaderCell>
+                  <Table.HeaderCell>{t("cargaMasiva.columna")}</Table.HeaderCell>
+                  <Table.HeaderCell>{t("cargaMasiva.error")}</Table.HeaderCell>
                 </Table.Row>
               </Table.Header>
               <Table.Body>
@@ -193,8 +195,8 @@ const CargaMasivaPage = () => {
             </Table>
           )}
 
-          <ListaFotos titulo="Fotos faltantes" nombres={reporte.fotos_faltantes} />
-          <ListaFotos titulo="Fotos sin usar" nombres={reporte.fotos_sin_usar} />
+          <ListaFotos titulo={t("cargaMasiva.fotosFaltantes")} nombres={reporte.fotos_faltantes} vacio={t("cargaMasiva.ninguna")} />
+          <ListaFotos titulo={t("cargaMasiva.fotosSinUsar")} nombres={reporte.fotos_sin_usar} vacio={t("cargaMasiva.ninguna")} />
         </div>
       )}
     </Container>
@@ -202,7 +204,8 @@ const CargaMasivaPage = () => {
 }
 
 export const config = defineRouteConfig({
-  label: "Carga masiva",
+  label: "cargaMasiva.menu",
+  translationNs: "translation",
 })
 
 export default CargaMasivaPage

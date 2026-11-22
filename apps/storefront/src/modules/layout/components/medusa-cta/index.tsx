@@ -6,7 +6,7 @@ import NextJs from "../../../common/icons/nextjs"
 const MedusaCTA = () => {
   return (
     <Text className="flex gap-x-2 txt-compact-small-plus items-center">
-      Powered by
+      Con tecnología de
       <a href="https://www.medusajs.com" target="_blank" rel="noreferrer" aria-label="Medusa">
         <Medusa fill="var(--color-fg-muted)" className="fill-fg-muted" />
       </a>

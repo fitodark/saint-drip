@@ -1,5 +1,6 @@
 import { expect, request as playwrightRequest, test, type Page } from "@playwright/test"
 import { BACKEND_URL, importarFixture, tokenAdmin } from "./helpers/admin"
+import { sinIngles } from "./helpers/idioma"
 
 // Checkout México (paso 16): invitado con Envío terrestre + SPEI (mock) y regla solo_terrestre en el envío.
 const DIRECCION = {
@@ -91,10 +92,12 @@ test.describe.serial("Checkout México", () => {
 
     const terrestre = page.getByTestId("delivery-option-radio").filter({ hasText: "Envío terrestre" })
     await expect(terrestre).toContainText("149", { timeout: 30_000 })
+    await sinIngles(page, "checkout: envío")
     await terrestre.click()
     await page.getByTestId("submit-delivery-option-button").click()
 
     await page.getByText("Transferencia SPEI", { exact: true }).click()
+    await sinIngles(page, "checkout: pago")
     await page.getByTestId("submit-payment-button").click()
 
     await page.getByRole("button", { name: "Generar referencia SPEI" }).click()
@@ -104,6 +107,7 @@ test.describe.serial("Checkout México", () => {
     await expect(instrucciones).toContainText("CLABE")
     await expect(instrucciones).toContainText("000000000000000001")
     await expect(page.getByTestId("order-complete-container")).toContainText("$1,448.00")
+    await sinIngles(page, "confirmación del pedido")
   })
 
   test("un carrito con un producto solo_terrestre no ofrece Envío express", async ({ page }) => {

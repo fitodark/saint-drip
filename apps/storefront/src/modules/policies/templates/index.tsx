@@ -21,7 +21,7 @@ export const PolicyPage = ({
 
 export const PoliciesUnavailable = () => (
   <p className="text-ui-fg-subtle">
-    Policy details for this region haven&apos;t been published yet.
+    Aún no se publican las políticas de esta región.
   </p>
 )
 
@@ -33,18 +33,17 @@ export const ShippingSummary = ({
   currencyCode: string
 }) => (
   <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2">
-    <dt className="text-ui-fg-subtle">Shipping rate</dt>
+    <dt className="text-ui-fg-subtle">Tarifa de envío</dt>
     <dd>{formatShippingRate(policies.shippingRate, currencyCode)}</dd>
-    <dt className="text-ui-fg-subtle">Processing time</dt>
+    <dt className="text-ui-fg-subtle">Tiempo de preparación</dt>
     <dd>{formatDayRange(policies.handlingDays)} business days</dd>
-    <dt className="text-ui-fg-subtle">Delivery time</dt>
+    <dt className="text-ui-fg-subtle">Tiempo de entrega</dt>
     <dd>{formatDayRange(policies.transitDays)} business days after dispatch</dd>
   </dl>
 )
 
 export const PlaceholderNotice = () => (
   <p className="text-ui-fg-subtle" data-testid="policy-placeholder">
-    This is placeholder content from the Medusa starter. Replace it with your
-    store&apos;s own text before launch.
+    Texto provisional. Reemplázalo con el texto de la marca antes del lanzamiento.
   </p>
 )

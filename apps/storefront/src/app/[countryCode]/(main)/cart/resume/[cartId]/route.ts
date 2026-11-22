@@ -17,10 +17,10 @@ export async function GET(
       fields: "id,completed_at,metadata",
     })
     if (cart.completed_at || cart.metadata?.ucp_canceled === true) {
-      throw new Error("Cart is no longer open")
+      throw new Error("El carrito ya no está abierto")
     }
   } catch {
-    return new NextResponse("This cart link has expired", {
+    return new NextResponse("Este enlace de carrito ya expiró", {
       status: 410,
       headers: NO_STORE,
     })

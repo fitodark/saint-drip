@@ -42,25 +42,25 @@ export async function GET(
 ) {
   const items = parseItems((await params).items)
   if (!items) {
-    return textResponse("Malformed permalink. Use /buy/{variant_id}:{quantity},...", 400)
+    return textResponse("Enlace mal formado. Usa /buy/{variant_id}:{quantity},...", 400)
   }
 
   const country = new URL(request.url).searchParams.get("context/address_country")
   const resolved = await resolveRegion(country ?? undefined)
   if (!resolved) {
-    return textResponse("This store does not ship to the requested country", 400)
+    return textResponse("Esta tienda no envía al país solicitado", 400)
   }
 
   const missing = await findMissingVariantIds(items.map((item) => item.variant_id))
   if (missing.length) {
-    return textResponse(`Unknown items: ${missing.join(", ")}`, 404)
+    return textResponse(`Productos desconocidos: ${missing.join(", ")}`, 404)
   }
 
   let cartId: string
   try {
     cartId = await createCartWithItems(resolved.region.id, items)
   } catch {
-    return textResponse("One or more items in this link can't be purchased", 400)
+    return textResponse("Uno o más productos de este enlace no se pueden comprar", 400)
   }
 
   await activateCart(cartId)

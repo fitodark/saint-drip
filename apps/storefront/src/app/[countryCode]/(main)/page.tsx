@@ -17,15 +17,15 @@ export async function generateMetadata(props: {
   const [origin, regions] = await Promise.all([getSiteOrigin(), listRegions()])
 
   return {
-    title: "Medusa Next.js Starter Template",
+    title: "Saint Drip — Ropa, tenis, joyería, perfumes y accesorios",
     description:
-      "A performant frontend ecommerce starter template with Next.js 16 and Medusa.",
+      "Tienda en línea de Saint Drip: ropa, tenis, joyería, perfumes y accesorios con envío a todo México.",
     alternates: {
       canonical: `${origin}/${countryCode}`,
       languages: {
         ...Object.fromEntries(
           listCountryCodes(regions).map((code) => [
-            `en-${code.toUpperCase()}`,
+            `es-${code.toUpperCase()}`,
             `${origin}/${code}`,
           ])
         ),

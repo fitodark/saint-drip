@@ -105,7 +105,7 @@ const AdyenPaymentButton = ({
         onError: (error) => {
           // Closing a wallet's payment sheet isn't an error worth showing.
           if (error.name !== "CANCEL") {
-            setErrorMessage("Could not process the payment. Please try again.")
+            setErrorMessage("No se pudo procesar el pago. Intenta de nuevo.")
           }
         },
       })
@@ -130,7 +130,7 @@ const AdyenPaymentButton = ({
     }
 
     mount().catch(() => {
-      setErrorMessage("Could not load the payment methods.")
+      setErrorMessage("No se pudieron cargar los métodos de pago.")
     })
 
     return () => {
@@ -144,7 +144,7 @@ const AdyenPaymentButton = ({
   if (notReady) {
     return (
       <Button disabled size="large" data-testid={dataTestId}>
-        Place order
+        Realizar pedido
       </Button>
     )
   }
@@ -156,7 +156,7 @@ const AdyenPaymentButton = ({
         error={
           clientKey
             ? errorMessage
-            : "Adyen client key is missing. Set the NEXT_PUBLIC_ADYEN_CLIENT_KEY environment variable."
+            : "Falta la llave de cliente de Adyen. Define la variable NEXT_PUBLIC_ADYEN_CLIENT_KEY."
         }
         data-testid="adyen-payment-error-message"
       />

@@ -34,7 +34,7 @@ export const listProducts = async ({
   queryParams?: ProductListQueryParams
 }> => {
   if (!countryCode && !regionId) {
-    throw new Error("Country code or region ID is required")
+    throw new Error("Se requiere el código de país o el ID de la región")
   }
 
   const limit = queryParams?.limit || 12

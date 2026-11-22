@@ -12,12 +12,13 @@ import LanguageSelect from "../language-select"
 import { Locale } from "@lib/data/locales"
 
 
-const SideMenuItems = {
-  Home: "/",
-  Store: "/store",
-  Account: "/account",
-  Cart: "/cart",
-}
+// D21: etiquetas en español; el data-testid conserva el nombre en inglés del starter.
+const SideMenuItems = [
+  { label: "Inicio", href: "/", testid: "home" },
+  { label: "Tienda", href: "/store", testid: "store" },
+  { label: "Cuenta", href: "/account", testid: "account" },
+  { label: "Carrito", href: "/cart", testid: "cart" },
+]
 
 type SideMenuProps = {
   regions: HttpTypes.StoreRegion[] | null
@@ -40,7 +41,7 @@ const SideMenu = ({ regions, locales, currentLocale }: SideMenuProps) => {
                   data-testid="nav-menu-button"
                   className="relative h-full flex items-center transition-all ease-out duration-200 focus:outline-none hover:text-ui-fg-base"
                 >
-                  Menu
+                  Menú
                 </Popover.Button>
               </div>
 
@@ -71,22 +72,22 @@ const SideMenu = ({ regions, locales, currentLocale }: SideMenuProps) => {
                       <button
                         data-testid="close-menu-button"
                         onClick={close}
-                        aria-label="Close menu"
+                        aria-label="Cerrar menú"
                       >
                         <XMark />
                       </button>
                     </div>
                     <ul className="flex flex-col gap-6 items-start justify-start">
-                      {Object.entries(SideMenuItems).map(([name, href]) => {
+                      {SideMenuItems.map(({ label, href, testid }) => {
                         return (
-                          <li key={name}>
+                          <li key={testid}>
                             <LocalizedClientLink
                               href={href}
                               className="text-3xl leading-10 hover:text-ui-fg-disabled"
                               onClick={close}
-                              data-testid={`${name.toLowerCase()}-link`}
+                              data-testid={`${testid}-link`}
                             >
-                              {name}
+                              {label}
                             </LocalizedClientLink>
                           </li>
                         )
@@ -131,8 +132,7 @@ const SideMenu = ({ regions, locales, currentLocale }: SideMenuProps) => {
                         />
                       </div>
                       <Text className="flex justify-between txt-compact-small">
-                        © {new Date().getFullYear()} Medusa Store. All rights
-                        reserved.
+                        © {new Date().getFullYear()} Saint Drip. Todos los derechos reservados.
                       </Text>
                     </div>
                   </div>

@@ -46,7 +46,7 @@ export function getProductPrice({
   variantId?: string
 }) {
   if (!product || !product.id) {
-    throw new Error("No product provided")
+    throw new Error("No se recibió el producto")
   }
 
   const cheapestPrice = () => {

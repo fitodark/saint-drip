@@ -12,17 +12,17 @@ export const getSortOptions = (currencyCode: string) => {
     { value: PRODUCT_INDEX_NAME, label: "Relevance" },
     {
       value: `${PRODUCT_INDEX_NAME}/sort/created_at:desc`,
-      label: "Latest Arrivals",
+      label: "Lo más nuevo",
     },
     {
       value: `${PRODUCT_INDEX_NAME}/sort/${minPrice}:asc`,
-      label: "Price: Low -> High",
+      label: "Precio: menor a mayor",
     },
     {
       value: `${PRODUCT_INDEX_NAME}/sort/${minPrice}:desc`,
-      label: "Price: High -> Low",
+      label: "Precio: mayor a menor",
     },
-    { value: `${PRODUCT_INDEX_NAME}/sort/title:asc`, label: "Title: A -> Z" },
-    { value: `${PRODUCT_INDEX_NAME}/sort/title:desc`, label: "Title: Z -> A" },
+    { value: `${PRODUCT_INDEX_NAME}/sort/title:asc`, label: "Nombre: A a la Z" },
+    { value: `${PRODUCT_INDEX_NAME}/sort/title:desc`, label: "Nombre: Z a la A" },
   ]
 }

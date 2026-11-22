@@ -49,7 +49,7 @@ const addLineItem = async (
 }
 
 const errorMessage = (error: unknown) =>
-  error instanceof Error ? error.message : "Could not add item to cart"
+  error instanceof Error ? error.message : "No se pudo agregar el producto al carrito"
 
 /** No-JavaScript add-to-cart: the product page form posts here. */
 export async function POST(
@@ -59,7 +59,7 @@ export async function POST(
   const { countryCode } = await params
   const region = await getRegion(countryCode)
   if (!region) {
-    return new NextResponse("Unknown country code", { status: 404 })
+    return new NextResponse("Código de país desconocido", { status: 404 })
   }
 
   const form = await request.formData()
@@ -72,10 +72,10 @@ export async function POST(
   try {
     variantId = await resolveVariantId(form, region.id)
   } catch {
-    return new NextResponse("Product not found", { status: 404 })
+    return new NextResponse("Producto no encontrado", { status: 404 })
   }
   if (!variantId) {
-    return new NextResponse("Select a valid product variant", { status: 400 })
+    return new NextResponse("Selecciona una variante válida", { status: 400 })
   }
 
   const existingCartId = await getCartId()

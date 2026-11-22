@@ -23,14 +23,14 @@ export default async function Footer() {
               href="/"
               className="txt-compact-xlarge-plus text-ui-fg-subtle hover:text-ui-fg-base uppercase"
             >
-              Medusa Store
+              Saint Drip
             </LocalizedClientLink>
           </div>
           <div className="text-small-regular gap-10 md:gap-x-16 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4">
             {productCategories && productCategories?.length > 0 && (
               <div className="flex flex-col gap-y-2">
                 <span className="txt-small-plus txt-ui-fg-base">
-                  Categories
+                  Categorías
                 </span>
                 <ul
                   className="grid grid-cols-1 gap-2"
@@ -88,7 +88,7 @@ export default async function Footer() {
             {collections && collections.length > 0 && (
               <div className="flex flex-col gap-y-2">
                 <span className="txt-small-plus txt-ui-fg-base">
-                  Collections
+                  Colecciones
                 </span>
                 <ul
                   className={clx(
@@ -113,7 +113,7 @@ export default async function Footer() {
             )}
             <div className="flex flex-col gap-y-2">
               <span className="txt-small-plus txt-ui-fg-base">
-                Customer service
+                Atención a clientes
               </span>
               <ul className="grid grid-cols-1 gap-y-2 text-ui-fg-subtle txt-small">
                 <li>
@@ -121,7 +121,7 @@ export default async function Footer() {
                     className="hover:text-ui-fg-base"
                     href="/shipping"
                   >
-                    Shipping information
+                    Información de envíos
                   </LocalizedClientLink>
                 </li>
                 <li>
@@ -129,7 +129,7 @@ export default async function Footer() {
                     className="hover:text-ui-fg-base"
                     href="/returns"
                   >
-                    Return policy
+                    Política de devoluciones
                   </LocalizedClientLink>
                 </li>
                 <li>
@@ -137,7 +137,7 @@ export default async function Footer() {
                     className="hover:text-ui-fg-base"
                     href="/terms"
                   >
-                    Terms of service
+                    Términos y condiciones
                   </LocalizedClientLink>
                 </li>
                 <li>
@@ -145,7 +145,7 @@ export default async function Footer() {
                     className="hover:text-ui-fg-base"
                     href="/privacy"
                   >
-                    Privacy policy
+                    Aviso de privacidad
                   </LocalizedClientLink>
                 </li>
                 <li>
@@ -153,7 +153,7 @@ export default async function Footer() {
                     className="hover:text-ui-fg-base"
                     href="/contact"
                   >
-                    Contact
+                    Contacto
                   </LocalizedClientLink>
                 </li>
                 <li>
@@ -161,43 +161,8 @@ export default async function Footer() {
                     className="hover:text-ui-fg-base"
                     href="/search"
                   >
-                    Search
+                    Buscar
                   </LocalizedClientLink>
-                </li>
-              </ul>
-            </div>
-            <div className="flex flex-col gap-y-2">
-              <span className="txt-small-plus txt-ui-fg-base">Medusa</span>
-              <ul className="grid grid-cols-1 gap-y-2 text-ui-fg-subtle txt-small">
-                <li>
-                  <a
-                    href="https://github.com/medusajs"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="hover:text-ui-fg-base"
-                  >
-                    GitHub
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="https://docs.medusajs.com"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="hover:text-ui-fg-base"
-                  >
-                    Documentation
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="https://github.com/medusajs/dtc-starter"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="hover:text-ui-fg-base"
-                  >
-                    Source code
-                  </a>
                 </li>
               </ul>
             </div>
@@ -205,7 +170,7 @@ export default async function Footer() {
         </div>
         <div className="flex w-full mb-16 justify-between text-ui-fg-muted">
           <Text className="txt-compact-small">
-            © {new Date().getFullYear()} Medusa Store. All rights reserved.
+            © {new Date().getFullYear()} Saint Drip. Todos los derechos reservados.
           </Text>
           <MedusaCTA />
         </div>

@@ -56,7 +56,7 @@ export async function getOrSetCart(countryCode: string) {
   const region = await getRegion(countryCode)
 
   if (!region) {
-    throw new Error(`Region not found for country code: ${countryCode}`)
+    throw new Error(`No se encontró la región para el código de país: ${countryCode}`)
   }
 
   let cart = await retrieveCart(undefined, "id,region_id")
@@ -93,7 +93,7 @@ export async function updateCart(data: HttpTypes.StoreUpdateCart) {
   const cartId = await getCartId()
 
   if (!cartId) {
-    throw new Error("No existing cart found, please create one before updating")
+    throw new Error("No se encontró el carrito; crea uno antes de actualizarlo")
   }
 
   const headers = {
@@ -124,13 +124,13 @@ export async function addToCart({
   countryCode: string
 }) {
   if (!variantId) {
-    throw new Error("Missing variant ID when adding to cart")
+    throw new Error("Falta el ID de la variante al agregar al carrito")
   }
 
   const cart = await getOrSetCart(countryCode)
 
   if (!cart) {
-    throw new Error("Error retrieving or creating cart")
+    throw new Error("Error al obtener o crear el carrito")
   }
 
   const headers = {
@@ -165,13 +165,13 @@ export async function updateLineItem({
   quantity: number
 }) {
   if (!lineId) {
-    throw new Error("Missing lineItem ID when updating line item")
+    throw new Error("Falta el ID de la línea al actualizarla")
   }
 
   const cartId = await getCartId()
 
   if (!cartId) {
-    throw new Error("Missing cart ID when updating line item")
+    throw new Error("Falta el ID del carrito al actualizar la línea")
   }
 
   const headers = {
@@ -192,13 +192,13 @@ export async function updateLineItem({
 
 export async function deleteLineItem(lineId: string) {
   if (!lineId) {
-    throw new Error("Missing lineItem ID when deleting line item")
+    throw new Error("Falta el ID de la línea al eliminarla")
   }
 
   const cartId = await getCartId()
 
   if (!cartId) {
-    throw new Error("Missing cart ID when deleting line item")
+    throw new Error("Falta el ID del carrito al eliminar la línea")
   }
 
   const headers = {
@@ -259,7 +259,7 @@ export async function applyPromotions(codes: string[]) {
   const cartId = await getCartId()
 
   if (!cartId) {
-    throw new Error("No existing cart found")
+    throw new Error("No se encontró el carrito")
   }
 
   const headers = {
@@ -337,11 +337,11 @@ export async function submitPromotionForm(
 export async function setAddresses(currentState: unknown, formData: FormData) {
   try {
     if (!formData) {
-      throw new Error("No form data found when setting addresses")
+      throw new Error("No se recibieron los datos de la dirección")
     }
     const cartId = getCartId()
     if (!cartId) {
-      throw new Error("No existing cart found when setting addresses")
+      throw new Error("No se encontró el carrito al guardar las direcciones")
     }
 
     const data = {
@@ -395,7 +395,7 @@ export async function placeOrder(cartId?: string) {
   const id = cartId || (await getCartId())
 
   if (!id) {
-    throw new Error("No existing cart found when placing an order")
+    throw new Error("No se encontró el carrito al realizar el pedido")
   }
 
   const headers = {
@@ -435,7 +435,7 @@ export async function updateRegion(countryCode: string, currentPath: string) {
   const region = await getRegion(countryCode)
 
   if (!region) {
-    throw new Error(`Region not found for country code: ${countryCode}`)
+    throw new Error(`No se encontró la región para el código de país: ${countryCode}`)
   }
 
   if (cartId) {

@@ -1,0 +1,27 @@
+// Textos del admin propio en español (idioma por defecto del admin, D22).
+export const es = {
+  cargaMasiva: {
+    menu: "Carga masiva",
+    titulo: "Carga masiva",
+    descargarPlantilla: "Descargar plantilla",
+    excel: "Excel",
+    excelAria: "Archivo Excel (.xlsx)",
+    fotos: "Fotos",
+    fotosAria: "Fotos (.jpg)",
+    nombresMalFormados: "Estos nombres no siguen el formato {{formato}}: {{nombres}}",
+    validar: "Validar",
+    validando: "Validando…",
+    importar: "Importar",
+    importando: "Importando…",
+    errorValidar: "No se pudo validar el archivo",
+    errorImportar: "No se pudo importar el catálogo",
+    creados: "{{count}} productos creados",
+    resumen: "{{productos}} productos · {{variantes}} variantes",
+    fila: "Fila",
+    columna: "Columna",
+    error: "Error",
+    fotosFaltantes: "Fotos faltantes",
+    fotosSinUsar: "Fotos sin usar",
+    ninguna: "Ninguna",
+  },
+}

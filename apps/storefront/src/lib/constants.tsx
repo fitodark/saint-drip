@@ -30,7 +30,7 @@ export const paymentInfoMap: Record<
     icon: <PayPal />,
   },
   pp_system_default: {
-    title: "Manual Payment",
+    title: "Pago manual",
     icon: <CreditCard />,
   },
   // Add more payment providers here
@@ -43,7 +43,7 @@ export const paymentInfoMap: Record<
 const MEDUSA_PAYMENTS_PREFIX = "pp_medusa-payments_"
 
 const medusaPaymentsInfo = {
-  title: "Credit card",
+  title: "Tarjeta de crédito o débito",
   icon: <CreditCard />,
 }
 
@@ -54,7 +54,7 @@ const medusaPaymentsInfo = {
 const ADYEN_PREFIX = "pp_adyen_"
 
 const adyenInfo = {
-  title: "Card, Apple Pay, or Google Pay",
+  title: "Tarjeta, Apple Pay o Google Pay",
   icon: <CreditCard />,
 }
 
