@@ -20,6 +20,18 @@ module.exports = {
         padding: "padding-top padding-right padding-bottom padding-left",
       },
       colors: {
+        // Tokens de §7: los valores viven en src/styles/globals.css.
+        primary: "var(--color-primary)",
+        "primary-fg": "var(--color-primary-fg)",
+        background: "var(--color-background)",
+        surface: "var(--color-surface)",
+        border: "var(--color-border)",
+        "border-strong": "var(--color-border-strong)",
+        fg: "var(--color-fg)",
+        "fg-muted": "var(--color-fg-muted)",
+        accent: "var(--color-accent)",
+        destructive: "var(--color-destructive)",
+        success: "var(--color-success)",
         grey: {
           0: "#FFFFFF",
           5: "#F9FAFB",
@@ -36,6 +48,7 @@ module.exports = {
       },
       borderRadius: {
         none: "0px",
+        DEFAULT: "0px",
         soft: "2px",
         base: "4px",
         rounded: "8px",
@@ -58,16 +71,8 @@ module.exports = {
         "3xl": "2rem",
       },
       fontFamily: {
-        sans: [
-          "Inter",
-          "-apple-system",
-          "BlinkMacSystemFont",
-          "Segoe UI",
-          "Roboto",
-          "Helvetica Neue",
-          "Ubuntu",
-          "sans-serif",
-        ],
+        display: ["var(--font-display)", "system-ui", "sans-serif"],
+        sans: ["var(--font-body)", "system-ui", "sans-serif"],
       },
       keyframes: {
         ring: {

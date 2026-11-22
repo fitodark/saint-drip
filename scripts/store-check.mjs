@@ -3,11 +3,34 @@
 //   node scripts/store-check.mjs shipping-option "<option name>"    e.g. "Envío terrestre"
 //   node scripts/store-check.mjs html <path> "<substring>"          e.g. /mx https://wa.me/529531720664
 // Reads the publishable key from apps/storefront/.env.local (written by scripts/write-storefront-env.mjs).
+import { execSync } from "node:child_process"
 import { readFileSync } from "node:fs"
 
 const BACKEND = "http://localhost:9000"
 const STOREFRONT = "http://localhost:8000"
-const [mode, arg1, arg2] = process.argv.slice(2)
+const [mode, rawArg1, arg2] = process.argv.slice(2)
+
+// Desviación D11: en Windows, Git Bash (MSYS) convierte un argumento que empieza con "/" en una ruta de Windows
+// antes de pasárselo a node ("/mx" llega como "C:/Program Files/Git/mx"). Se deshace la conversión quitando la
+// raíz de MSYS (`cygpath -m /`, o EXEPATH sin "\bin"). Fuera de MSYS el argumento no cambia.
+const raizMsys = () => {
+  if (process.platform !== "win32" || !process.env.MSYSTEM) return null
+  try {
+    return execSync("cygpath -m /", { encoding: "utf8" }).trim()
+  } catch {
+    const exe = process.env.EXEPATH
+    return exe ? exe.replace(/\\/g, "/").replace(/\/bin\/?$/i, "/") : null
+  }
+}
+const deshacerConversionMsys = (valor) => {
+  if (!valor || !/^[A-Za-z]:[\\/]/.test(valor)) return valor
+  const raiz = raizMsys()
+  if (!raiz) return valor
+  const normal = valor.replace(/\\/g, "/")
+  const prefijo = raiz.endsWith("/") ? raiz : raiz + "/"
+  return normal.toLowerCase().startsWith(prefijo.toLowerCase()) ? "/" + normal.slice(prefijo.length) : valor
+}
+const arg1 = mode === "html" ? deshacerConversionMsys(rawArg1) : rawArg1
 
 const usage = () => {
   console.error("uso: store-check.mjs payment-provider <id> | shipping-option <nombre> | html <ruta> <texto>")

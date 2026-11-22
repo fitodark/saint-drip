@@ -2,6 +2,35 @@
 @import "tailwindcss/components";
 @import "tailwindcss/utilities";
 
+/* Tokens del sistema de diseño (blueprint §7). Único archivo del storefront con literales hex.
+   Va después de los @import porque CSS exige que los @import sean lo primero del archivo.
+   --font-display y --font-body los asigna next/font en <html> (src/app/layout.tsx). */
+:root {
+  --color-primary: #0A0A0A;
+  --color-primary-fg: #F4F4F1;
+  --color-background: #F4F4F1;
+  --color-surface: #FFFFFF;
+  --color-border: #D6D6D2;
+  --color-border-strong: #8A8A84;
+  --color-fg: #0A0A0A;
+  --color-fg-muted: #6B6B66;
+  --color-accent: #C6FF3D;
+  --color-destructive: #B91C30;
+  --color-success: #17803F;
+  --radius: 0px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 @layer utilities {
   /* Chrome, Safari and Opera */
   .no-scrollbar::-webkit-scrollbar {
