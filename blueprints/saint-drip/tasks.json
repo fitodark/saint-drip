@@ -326,7 +326,7 @@
       "apps/backend/src/jobs/factura-global.ts",
       "apps/backend/src/lib/cfdi/__tests__/reglas.unit.spec.ts"
     ],
-    "status": "pending"
+    "status": "done"
   },
   {
     "id": "E2-T7",
