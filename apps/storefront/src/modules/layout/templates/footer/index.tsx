@@ -1,5 +1,6 @@
 import { listCategories } from "@lib/data/categories"
 import { categoriasEnOrden } from "@lib/util/categorias"
+import { REDES, UBICACION } from "@lib/util/marca"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
 
 // Pie del tema A (editorial): fondo negro con marca, tienda, ayuda y contacto, y una franja legal.
@@ -28,6 +29,33 @@ export default async function Footer() {
             Saint Drip
           </LocalizedClientLink>
           <p className="text-sm leading-relaxed text-border">Exclusividad en cada prenda.</p>
+          <p className="text-sm text-border">{UBICACION}</p>
+          <ul className="mt-1 flex gap-2" aria-label="Redes sociales">
+            {REDES.map(({ nombre, url }) => (
+              <li key={nombre}>
+                <a
+                  href={url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`${nombre} de Saint Drip`}
+                  className="flex h-11 w-11 items-center justify-center border border-border-strong hover:border-primary-fg"
+                >
+                  {nombre === "Instagram" ? (
+                    <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                      <rect x="3" y="3" width="18" height="18" rx="5" />
+                      <circle cx="12" cy="12" r="4" />
+                      <circle cx="17.5" cy="6.5" r="0.8" fill="currentColor" />
+                    </svg>
+                  ) : (
+                    <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                      <path d="M14 3v11a4 4 0 11-4-4" />
+                      <path d="M14 3c0 3 2 5 5 5" />
+                    </svg>
+                  )}
+                </a>
+              </li>
+            ))}
+          </ul>
         </div>
 
         <nav aria-labelledby="pie-tienda" className="flex flex-col gap-y-3 text-sm">
