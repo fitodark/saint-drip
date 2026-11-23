@@ -110,10 +110,17 @@ const CartDropdown = ({
         {/* a11y (paso 15): sin PopoverButton alrededor del enlace (nested-interactive); el panel es static y abre por hover. */}
         <div className="h-full flex items-center">
           <LocalizedClientLink
-            className="hover:text-ui-fg-base"
+            className="flex h-11 items-center gap-1.5 font-medium hover:text-fg-muted"
             href="/cart"
+            aria-label={`Carrito (${totalItems})`}
             data-testid="nav-cart-link"
-          >{`Carrito (${totalItems})`}</LocalizedClientLink>
+          >
+            <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+              <path d="M5 8h14l-1 13H6L5 8z" />
+              <path d="M9 8V6a3 3 0 016 0v2" />
+            </svg>
+            {`(${totalItems})`}
+          </LocalizedClientLink>
         </div>
         <Transition
           show={cartDropdownOpen}

@@ -68,7 +68,8 @@ test("el flujo de compra se completa solo con teclado", async ({ page }) => {
   await page.keyboard.press("Enter")
   expect(await page.evaluate(() => document.activeElement?.id)).toBe("contenido")
 
-  // Menú lateral: Enter abre, Escape cierra y devuelve el foco al botón.
+  // Menú lateral (tema A: solo en pantallas chicas): Enter abre, Escape cierra y devuelve el foco al botón.
+  await page.setViewportSize({ width: 390, height: 844 })
   await page.goto("/mx")
   await page.waitForLoadState("networkidle")
   await tabHasta(page, /nav-menu-button/, 5)
@@ -77,6 +78,12 @@ test("el flujo de compra se completa solo con teclado", async ({ page }) => {
   await page.keyboard.press("Escape")
   await expect(page.getByTestId("store-link")).toBeHidden()
   expect(await page.evaluate(() => document.activeElement?.getAttribute("data-testid"))).toBe("nav-menu-button")
+  await page.setViewportSize({ width: 1280, height: 720 })
+
+  // Escritorio: las categorías del header se alcanzan con Tab.
+  await page.goto("/mx")
+  await page.waitForLoadState("networkidle")
+  await tabHasta(page, /nav-category-link "Ropa"/i, 10)
 
   // Tienda → PDP del hoodie: la talla se elige con flechas dentro del grupo de radios.
   await page.goto("/mx/store")

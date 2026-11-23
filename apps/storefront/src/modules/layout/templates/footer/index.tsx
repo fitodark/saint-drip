@@ -1,178 +1,94 @@
-import { listCategories } from "@lib/data/categories";
-import { listCollections } from "@lib/data/collections";
-import { Text, clx } from "@modules/common/components/ui";
+import { listCategories } from "@lib/data/categories"
+import { categoriasEnOrden } from "@lib/util/categorias"
+import LocalizedClientLink from "@modules/common/components/localized-client-link"
 
-import LocalizedClientLink from "@modules/common/components/localized-client-link";
+// Pie del tema A (editorial): fondo negro con marca, tienda, ayuda y contacto, y una franja legal.
+const AYUDA = [
+  { href: "/shipping", texto: "Información de envíos" },
+  { href: "/returns", texto: "Devoluciones y cambios" },
+  { href: "/contact", texto: "Contacto" },
+  { href: "/search", texto: "Buscar" },
+]
+
+const enlace = "text-border hover:text-primary-fg hover:underline underline-offset-4"
+const titulo = "text-xs font-semibold uppercase tracking-[0.08em] text-primary-fg"
 
 export default async function Footer() {
-  const [{ collections }, productCategories] = await Promise.all([
-    listCollections({ fields: "id,handle,title" }),
-    listCategories({
-      fields:
-        "id,name,handle,parent_category_id,category_children.id,category_children.name,category_children.handle",
-    }),
-  ]);
+  const categorias = categoriasEnOrden(await listCategories({ fields: "id,name,handle,parent_category_id" }))
+  const whatsapp = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER
 
   return (
-    <footer className="border-t border-ui-border-base w-full">
-      <div className="content-container flex flex-col w-full">
-        <div className="flex flex-col gap-y-6 xsmall:flex-row items-start justify-between py-40">
-          <div>
-            <LocalizedClientLink
-              href="/"
-              className="txt-compact-xlarge-plus text-ui-fg-subtle hover:text-ui-fg-base uppercase"
-            >
-              Saint Drip
-            </LocalizedClientLink>
-          </div>
-          <div className="text-small-regular gap-10 md:gap-x-16 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4">
-            {productCategories && productCategories?.length > 0 && (
-              <div className="flex flex-col gap-y-2">
-                <span className="txt-small-plus txt-ui-fg-base">
-                  Categorías
-                </span>
-                <ul
-                  className="grid grid-cols-1 gap-2"
-                  data-testid="footer-categories"
-                >
-                  {productCategories?.slice(0, 6).map((c) => {
-                    if (c.parent_category_id) {
-                      return;
-                    }
-
-                    const children =
-                      c.category_children?.map((child) => ({
-                        name: child.name,
-                        handle: child.handle,
-                        id: child.id,
-                      })) || null;
-
-                    return (
-                      <li
-                        className="flex flex-col gap-2 text-ui-fg-subtle txt-small"
-                        key={c.id}
-                      >
-                        <LocalizedClientLink
-                          className={clx(
-                            "hover:text-ui-fg-base",
-                            children && "txt-small-plus"
-                          )}
-                          href={`/categories/${c.handle}`}
-                          data-testid="category-link"
-                        >
-                          {c.name}
-                        </LocalizedClientLink>
-                        {children && (
-                          <ul className="grid grid-cols-1 ml-3 gap-2">
-                            {children &&
-                              children.map((child) => (
-                                <li key={child.id}>
-                                  <LocalizedClientLink
-                                    className="hover:text-ui-fg-base"
-                                    href={`/categories/${child.handle}`}
-                                    data-testid="category-link"
-                                  >
-                                    {child.name}
-                                  </LocalizedClientLink>
-                                </li>
-                              ))}
-                          </ul>
-                        )}
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            )}
-            {collections && collections.length > 0 && (
-              <div className="flex flex-col gap-y-2">
-                <span className="txt-small-plus txt-ui-fg-base">
-                  Colecciones
-                </span>
-                <ul
-                  className={clx(
-                    "grid grid-cols-1 gap-2 text-ui-fg-subtle txt-small",
-                    {
-                      "grid-cols-2": (collections?.length || 0) > 3,
-                    }
-                  )}
-                >
-                  {collections?.slice(0, 6).map((c) => (
-                    <li key={c.id}>
-                      <LocalizedClientLink
-                        className="hover:text-ui-fg-base"
-                        href={`/collections/${c.handle}`}
-                      >
-                        {c.title}
-                      </LocalizedClientLink>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            <div className="flex flex-col gap-y-2">
-              <span className="txt-small-plus txt-ui-fg-base">
-                Atención a clientes
-              </span>
-              <ul className="grid grid-cols-1 gap-y-2 text-ui-fg-subtle txt-small">
-                <li>
-                  <LocalizedClientLink
-                    className="hover:text-ui-fg-base"
-                    href="/shipping"
-                  >
-                    Información de envíos
-                  </LocalizedClientLink>
-                </li>
-                <li>
-                  <LocalizedClientLink
-                    className="hover:text-ui-fg-base"
-                    href="/returns"
-                  >
-                    Política de devoluciones
-                  </LocalizedClientLink>
-                </li>
-                <li>
-                  <LocalizedClientLink
-                    className="hover:text-ui-fg-base"
-                    href="/terms"
-                  >
-                    Términos y condiciones
-                  </LocalizedClientLink>
-                </li>
-                <li>
-                  <LocalizedClientLink
-                    className="hover:text-ui-fg-base"
-                    href="/privacy"
-                  >
-                    Aviso de privacidad
-                  </LocalizedClientLink>
-                </li>
-                <li>
-                  <LocalizedClientLink
-                    className="hover:text-ui-fg-base"
-                    href="/contact"
-                  >
-                    Contacto
-                  </LocalizedClientLink>
-                </li>
-                <li>
-                  <LocalizedClientLink
-                    className="hover:text-ui-fg-base"
-                    href="/search"
-                  >
-                    Buscar
-                  </LocalizedClientLink>
-                </li>
-              </ul>
-            </div>
-          </div>
+    <footer className="foco-claro w-full bg-primary text-primary-fg">
+      <div className="content-container grid grid-cols-1 gap-10 py-16 xsmall:grid-cols-2 small:grid-cols-4">
+        <div className="flex flex-col gap-y-3">
+          <LocalizedClientLink
+            href="/"
+            className="font-display text-[28px] font-black uppercase tracking-[0.04em] [font-stretch:125%]"
+          >
+            Saint Drip
+          </LocalizedClientLink>
+          <p className="text-sm leading-relaxed text-border">Exclusividad en cada prenda.</p>
         </div>
-        <div className="flex w-full mb-16 justify-between text-ui-fg-muted">
-          <Text className="txt-compact-small">
-            © {new Date().getFullYear()} Saint Drip. Todos los derechos reservados.
-          </Text>
+
+        <nav aria-labelledby="pie-tienda" className="flex flex-col gap-y-3 text-sm">
+          <h2 id="pie-tienda" className={titulo}>
+            Tienda
+          </h2>
+          <ul className="flex flex-col gap-y-2.5" data-testid="footer-categories">
+            {categorias.map((c) => (
+              <li key={c.id}>
+                <LocalizedClientLink className={enlace} href={`/categories/${c.handle}`} data-testid="category-link">
+                  {c.name}
+                </LocalizedClientLink>
+              </li>
+            ))}
+          </ul>
+        </nav>
+
+        <nav aria-labelledby="pie-ayuda" className="flex flex-col gap-y-3 text-sm">
+          <h2 id="pie-ayuda" className={titulo}>
+            Ayuda
+          </h2>
+          <ul className="flex flex-col gap-y-2.5">
+            {AYUDA.map(({ href, texto }) => (
+              <li key={href}>
+                <LocalizedClientLink className={enlace} href={href}>
+                  {texto}
+                </LocalizedClientLink>
+              </li>
+            ))}
+          </ul>
+        </nav>
+
+        <div className="flex flex-col gap-y-3 text-sm">
+          <h2 className={titulo}>Pagos y facturación</h2>
+          <p className="leading-relaxed text-border">
+            Tarjeta, SPEI o PayPal. Solicita tu factura CFDI desde tu cuenta.
+          </p>
+          {whatsapp && (
+            <a
+              href={`https://wa.me/${whatsapp}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-1 inline-flex h-11 items-center self-start border border-border-strong px-4 hover:border-primary-fg"
+            >
+              Escríbenos por WhatsApp
+            </a>
+          )}
+        </div>
+      </div>
+
+      <div className="content-container flex flex-col gap-4 border-t border-border-strong py-6 pb-24 text-[13px] xsmall:flex-row xsmall:justify-between">
+        <p className="text-border">© {new Date().getFullYear()} Saint Drip. Todos los derechos reservados.</p>
+        <div className="flex flex-wrap gap-x-5 gap-y-2">
+          <LocalizedClientLink className={enlace} href="/terms">
+            Términos y condiciones
+          </LocalizedClientLink>
+          <LocalizedClientLink className={enlace} href="/privacy">
+            Aviso de privacidad
+          </LocalizedClientLink>
         </div>
       </div>
     </footer>
-  );
+  )
 }

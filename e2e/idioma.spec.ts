@@ -63,11 +63,13 @@ test.describe.serial("Idioma", () => {
       await sinIngles(page, ruta)
     }
 
-    // Menú lateral abierto
+    // Menú lateral abierto (tema A: solo existe en pantallas chicas)
+    await page.setViewportSize({ width: 390, height: 844 })
     await page.goto("/mx")
     await page.getByTestId("nav-menu-button").click()
     await expect(page.getByTestId("store-link")).toHaveText("Tienda")
     await sinIngles(page, "/mx (menú)")
+    await page.setViewportSize({ width: 1280, height: 720 })
 
     // Carrito y checkout
     await agregarHoodieM(page)

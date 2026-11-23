@@ -129,7 +129,7 @@ const Search = () => {
           open()
         }}
         aria-label="Buscar productos"
-        className="flex items-center hover:text-ui-fg-base"
+        className="flex h-11 w-11 items-center justify-center hover:text-fg-muted"
         data-testid="nav-search-button"
       >
         <MagnifyingGlass />

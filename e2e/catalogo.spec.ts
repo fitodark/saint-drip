@@ -31,15 +31,17 @@ test.describe.serial("Catálogo: inicio por categorías y PDP", () => {
     await contexto.close()
   })
 
-  test("el inicio muestra ROPA y TENIS y omite las categorías sin productos publicados", async ({ page }) => {
+  test("el inicio muestra Ropa y Tenis y omite las categorías sin productos publicados", async ({ page }) => {
     // D13: los carriles salen de la caché de catálogo (≤ 60 s); tras reimportar el fixture se recarga hasta 90 s.
     await expect(async () => {
       await page.goto("/mx")
       await expect(page.getByRole("heading", { level: 1, name: "Exclusividad en cada prenda" })).toBeVisible()
-      await expect(page.getByRole("heading", { level: 2, name: "ROPA" })).toBeVisible()
-      await expect(page.getByRole("heading", { level: 2, name: "TENIS" })).toBeVisible()
+      // Tema A: "Compra por categoría" muestra una tarjeta (h3) por categoría con productos publicados.
+      const grid = page.getByRole("region", { name: "Compra por categoría" })
+      await expect(grid.getByRole("heading", { level: 3, name: /^Ropa/i })).toBeVisible()
+      await expect(grid.getByRole("heading", { level: 3, name: /^Tenis/i })).toBeVisible()
       // El perfume del fixture es borrador: su categoría no tiene productos publicados.
-      await expect(page.getByRole("heading", { level: 2, name: "PERFUMES" })).toHaveCount(0)
+      await expect(grid.getByRole("heading", { level: 3, name: /^Perfumes/i })).toHaveCount(0)
     }).toPass({ timeout: 90_000, intervals: [5_000] })
   })
 
