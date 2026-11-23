@@ -2,6 +2,7 @@ import { listCategories } from "@lib/data/categories"
 import { categoriasEnOrden } from "@lib/util/categorias"
 import { REDES, UBICACION } from "@lib/util/marca"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
+import Image from "next/image"
 
 // Pie del tema A (editorial): fondo negro con marca, tienda, ayuda y contacto, y una franja legal.
 const AYUDA = [
@@ -22,11 +23,8 @@ export default async function Footer() {
     <footer className="foco-claro w-full bg-primary text-primary-fg">
       <div className="content-container grid grid-cols-1 gap-10 py-16 xsmall:grid-cols-2 small:grid-cols-4">
         <div className="flex flex-col gap-y-3">
-          <LocalizedClientLink
-            href="/"
-            className="font-display text-[28px] font-black uppercase tracking-[0.04em] [font-stretch:125%]"
-          >
-            Saint Drip
+          <LocalizedClientLink href="/" className="self-start" aria-label="Saint Drip, inicio">
+            <Image src="/marca/logo-claro.png" alt="" width={600} height={546} className="h-24 w-auto" />
           </LocalizedClientLink>
           <p className="text-sm leading-relaxed text-border">Exclusividad en cada prenda.</p>
           <p className="text-sm text-border">{UBICACION}</p>

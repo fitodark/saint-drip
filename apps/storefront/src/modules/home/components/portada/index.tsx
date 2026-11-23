@@ -1,7 +1,8 @@
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
+import Image from "next/image"
 
-// Portada del tema A: texto a la izquierda y bloque visual a la derecha. El monograma "SD" ocupa el lugar
-// de la foto de campaña hasta que la marca la entregue (cambiar el bloque derecho por next/image).
+// Portada del tema A: texto a la izquierda y bloque visual a la derecha. El logo de la marca ocupa el lugar
+// de la foto de campaña hasta que la marca la entregue.
 export default function Portada() {
   return (
     <section className="content-container pt-12">
@@ -28,11 +29,8 @@ export default function Portada() {
             </a>
           </div>
         </div>
-        <div
-          aria-hidden="true"
-          className="hidden min-h-[520px] items-center justify-center bg-primary font-display text-[200px] font-black leading-none tracking-[0.04em] text-primary-fg [font-stretch:125%] small:flex"
-        >
-          SD
+        <div className="hidden min-h-[520px] items-center justify-center bg-primary small:flex">
+          <Image src="/marca/logo-claro.png" alt="" width={600} height={546} priority className="w-1/2 max-w-[320px] h-auto" />
         </div>
       </div>
     </section>

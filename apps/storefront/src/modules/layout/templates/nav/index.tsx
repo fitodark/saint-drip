@@ -12,6 +12,7 @@ import CartButton from "@modules/layout/components/cart-button"
 import NavCategorias from "@modules/layout/components/nav-categorias"
 import Search from "@modules/layout/components/search"
 import SideMenu from "@modules/layout/components/side-menu"
+import Image from "next/image"
 
 // Header del tema A (editorial): franja de anuncio, logo "SD", categorías a la vista en escritorio y
 // el menú lateral solo en pantallas chicas.
@@ -39,10 +40,10 @@ export default async function Nav() {
             <LocalizedClientLink
               href="/"
               aria-label="Saint Drip, inicio"
-              className="flex h-11 items-center font-display text-[26px] font-black tracking-[0.04em] [font-stretch:125%]"
+              className="flex h-14 items-center"
               data-testid="nav-store-link"
             >
-              SD
+              <Image src="/marca/logo-oscuro.png" alt="" width={600} height={546} priority className="h-12 w-auto" />
             </LocalizedClientLink>
           </div>
 

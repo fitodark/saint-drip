@@ -5,6 +5,7 @@ import { listProducts } from "@lib/data/products"
 import { categoriasEnOrden } from "@lib/util/categorias"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
 import Image from "next/image"
+import { urlImagen } from "@lib/util/imagen"
 
 export default async function CategoriasGrid({ countryCode }: { countryCode: string }) {
   const categorias = categoriasEnOrden(await listCategories({ fields: "id,name,handle,parent_category_id" }))
@@ -40,7 +41,7 @@ export default async function CategoriasGrid({ countryCode }: { countryCode: str
               <div className="relative aspect-[3/4] overflow-hidden bg-border">
                 {foto && (
                   <Image
-                    src={foto}
+                    src={urlImagen(foto)}
                     alt=""
                     fill
                     sizes="(min-width: 1024px) 20vw, 50vw"

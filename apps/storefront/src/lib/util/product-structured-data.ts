@@ -6,6 +6,7 @@ import {
   buildShippingDetails,
   getRegionPolicies,
 } from "./store-policies"
+import { urlImagen } from "@lib/util/imagen"
 
 const SCHEMA_IN_STOCK = "https://schema.org/InStock"
 const SCHEMA_OUT_OF_STOCK = "https://schema.org/OutOfStock"
@@ -28,10 +29,10 @@ export const buildProductStructuredData = ({
 }) => {
   const currency = region.currency_code.toUpperCase()
   const images = (product.images ?? [])
-    .map((image) => image.url)
+    .map((image) => urlImagen(image.url))
     .filter(Boolean)
   if (!images.length && product.thumbnail) {
-    images.push(product.thumbnail)
+    images.push(urlImagen(product.thumbnail))
   }
   const description = product.description || product.title
   const brand = { "@type": "Brand", name: STORE_NAME }
@@ -90,7 +91,7 @@ export const buildProductStructuredData = ({
         "@type": "Product",
         name: `${product.title} - ${variant.title}`,
         sku: variant.sku || undefined,
-        image: variant.images?.[0]?.url || images[0],
+        image: urlImagen(variant.images?.[0]?.url) || images[0],
         additionalProperty: (variant.options ?? []).map((value) => ({
           "@type": "PropertyValue",
           name: optionTitles.get(value.option_id ?? ""),

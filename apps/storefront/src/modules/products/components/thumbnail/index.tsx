@@ -3,6 +3,7 @@ import Image from "next/image"
 import React from "react"
 
 import PlaceholderImage from "@modules/common/icons/placeholder-image"
+import { urlImagen } from "@lib/util/imagen"
 
 type ThumbnailProps = {
   thumbnail?: string | null
@@ -54,7 +55,7 @@ const ImageOrPlaceholder = ({
 }: Pick<ThumbnailProps, "size" | "alt"> & { image?: string }) => {
   return image ? (
     <Image
-      src={image}
+      src={urlImagen(image)}
       alt={alt ?? ""}
       className="absolute inset-0 object-cover object-center"
       draggable={false}

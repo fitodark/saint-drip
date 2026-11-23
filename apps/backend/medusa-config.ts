@@ -24,7 +24,10 @@ export default defineConfig({
   },
   admin: {
     disable: process.env.DISABLE_MEDUSA_ADMIN === "true",
-    backendUrl,
+    // D26: el admin lo sirve el mismo servidor que la API, así que llama al mismo origen desde el que se abre
+    // (localhost, la IP de la red, QA o producción). Con MEDUSA_BACKEND_URL fijo, abrirlo desde otro host
+    // mandaba las llamadas a otro origen sin la cookie de sesión.
+    backendUrl: "/",
   },
   modules: [
     ...(useRedis

@@ -86,9 +86,13 @@ test("el flujo de compra se completa solo con teclado", async ({ page }) => {
   await tabHasta(page, /nav-category-link "Ropa"/i, 10)
 
   // Tienda → PDP del hoodie: la talla se elige con flechas dentro del grupo de radios.
+  // El catálogo real es grande: se llega al producto escribiendo en el buscador de la tienda.
   await page.goto("/mx/store")
   await page.waitForLoadState("networkidle")
-  await tabHasta(page, /"Hoodie Oversize Negro/, 80)
+  await tabHasta(page, /store-search-input/, 60)
+  await page.keyboard.type("Hoodie Oversize Negro")
+  await expect(page.getByRole("link", { name: /Hoodie Oversize Negro/ }).first()).toBeVisible({ timeout: 30_000 })
+  await tabHasta(page, /"Hoodie Oversize Negro/, 20)
   await page.keyboard.press("Enter")
   await page.waitForURL(/sd-hoodie-oversize-negro/)
   await page.waitForLoadState("networkidle")

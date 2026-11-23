@@ -31,17 +31,31 @@ test.describe.serial("Catálogo: inicio por categorías y PDP", () => {
     await contexto.close()
   })
 
-  test("el inicio muestra Ropa y Tenis y omite las categorías sin productos publicados", async ({ page }) => {
-    // D13: los carriles salen de la caché de catálogo (≤ 60 s); tras reimportar el fixture se recarga hasta 90 s.
+  test("el inicio muestra solo las categorías con productos publicados", async ({ page }) => {
+    // Lo que se espera sale de la base (el catálogo real cambia): una tarjeta por categoría con al menos un
+    // producto publicado. Con el fixture, Ropa y Tenis siempre tienen uno.
+    const request = await playwrightRequest.newContext()
+    const headers = { Authorization: `Bearer ${await tokenAdmin(request)}` }
+    const esperado: Record<string, boolean> = {}
+    for (const handle of ["ropa", "tenis", "joyeria", "perfumes", "accesorios"]) {
+      const cat = await (await request.get(`${BACKEND_URL}/admin/product-categories?handle=${handle}&fields=id,name`, { headers })).json()
+      const c = cat.product_categories[0]
+      const prods = await (
+        await request.get(`${BACKEND_URL}/admin/products?category_id[]=${c.id}&status[]=published&limit=1&fields=id`, { headers })
+      ).json()
+      esperado[c.name] = prods.count > 0
+    }
+    await request.dispose()
+    expect(esperado["Ropa"] && esperado["Tenis"]).toBe(true)
+
+    // D13: el inicio sale de la caché de catálogo (≤ 60 s); tras reimportar el fixture se recarga hasta 90 s.
     await expect(async () => {
       await page.goto("/mx")
       await expect(page.getByRole("heading", { level: 1, name: "Exclusividad en cada prenda" })).toBeVisible()
-      // Tema A: "Compra por categoría" muestra una tarjeta (h3) por categoría con productos publicados.
       const grid = page.getByRole("region", { name: "Compra por categoría" })
-      await expect(grid.getByRole("heading", { level: 3, name: /^Ropa/i })).toBeVisible()
-      await expect(grid.getByRole("heading", { level: 3, name: /^Tenis/i })).toBeVisible()
-      // El perfume del fixture es borrador: su categoría no tiene productos publicados.
-      await expect(grid.getByRole("heading", { level: 3, name: /^Perfumes/i })).toHaveCount(0)
+      for (const [nombre, hay] of Object.entries(esperado)) {
+        await expect(grid.getByRole("heading", { level: 3, name: new RegExp(`^${nombre}`, "i") })).toHaveCount(hay ? 1 : 0)
+      }
     }).toPass({ timeout: 90_000, intervals: [5_000] })
   })
 

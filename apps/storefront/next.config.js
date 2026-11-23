@@ -13,6 +13,21 @@ const S3_PATHNAME = process.env.MEDUSA_CLOUD_S3_PATHNAME
  */
 const BACKEND_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000"
 
+const hostDe = (url) => {
+  try {
+    return new URL(url).hostname
+  } catch {
+    return null
+  }
+}
+
+// D26: para probar desde otro dispositivo de la red (p. ej. http://192.168.0.217:8000), next dev debe aceptar
+// el host de NEXT_PUBLIC_BASE_URL; si no, bloquea sus scripts y la página queda sin interacción.
+const DEV_HOSTS = [...new Set([hostDe(process.env.NEXT_PUBLIC_BASE_URL), hostDe(BACKEND_URL)])].filter(
+  (h) => h && h !== "localhost"
+)
+const BACKEND = new URL(BACKEND_URL)
+
 /**
  * Blueprint §14: encabezados de seguridad. La CSP va en modo report-only en v1 porque Stripe y PayPal
  * cargan scripts y marcos propios; las violaciones solo aparecen en la consola del navegador.
@@ -41,6 +56,7 @@ const SECURITY_HEADERS = [
 
 const nextConfig = {
   reactStrictMode: true,
+  allowedDevOrigins: DEV_HOSTS,
   async headers() {
     return [
       {
@@ -82,6 +98,10 @@ const nextConfig = {
       {
         protocol: "http",
         hostname: "localhost",
+      },
+      {
+        protocol: BACKEND.protocol.replace(":", ""),
+        hostname: BACKEND.hostname,
       },
       {
         protocol: "https",

@@ -1,6 +1,7 @@
 import { HttpTypes } from "@medusajs/types"
 import { Container } from "@modules/common/components/ui"
 import Image from "next/image"
+import { urlImagen } from "@lib/util/imagen"
 
 type ImageGalleryProps = {
   images: HttpTypes.StoreProductImage[]
@@ -19,7 +20,7 @@ const ImageGallery = ({ images }: ImageGalleryProps) => {
             >
               {!!image.url && (
                 <Image
-                  src={image.url}
+                  src={urlImagen(image.url)}
                   priority={index <= 2 ? true : false}
                   className="absolute inset-0 rounded-rounded"
                   alt={`Imagen del producto ${index + 1}`}
