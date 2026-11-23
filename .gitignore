@@ -15,3 +15,4 @@ test-results/
 .scaffold-tmp/
 *.log
 .DS_Store
+migracion-catalogo/

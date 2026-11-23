@@ -365,7 +365,7 @@ convierten con `String()`, el texto enriquecido se concatena y las vacías queda
 | handle | `^[a-z0-9]+(-[a-z0-9]+)*$`, ≤ 80 caracteres | `E_HANDLE` |
 | categoria | `ropa` \| `tenis` \| `joyeria` \| `perfumes` \| `accesorios` | `E_CATEGORIA` |
 | tipo_opcion | `talla_ropa` \| `talla_calzado` \| `contenido_ml` \| `medida` \| `unica` | `E_TIPO_OPCION` |
-| valor_opcion | talla_ropa ∈ {XCH, CH, M, G, EG, EEG}; talla_calzado número de 22 a 31 en pasos de 0.5 (`25` o `25.5`); contenido_ml entero 1–1000; medida texto ≤ 20 caracteres; unica = `Única` | `E_VALOR_OPCION` |
+| valor_opcion | talla_ropa ∈ {XCH, CH, M, G, EG, EEG, XS, S, L, XL, XXL} (D25); talla_calzado número de 22 a 31 en pasos de 0.5 (`25` o `25.5`); contenido_ml entero 1–1000; medida texto ≤ 20 caracteres; unica = `Única` | `E_VALOR_OPCION` |
 | sku | `^[A-Z0-9-]{3,40}$`, único en el archivo (se marca la 2.ª aparición) | `E_SKU` / `E_SKU_DUPLICADO` |
 | precio_mxn | `^\d{1,7}(\.\d{1,2})?$` y > 0 | `E_PRECIO` |
 | existencia | `^\d{1,6}$` (entero ≥ 0) | `E_EXISTENCIA` |
@@ -847,7 +847,7 @@ Lógica pura en `apps/backend/src/lib/catalog-import/`, sin imports de `@medusaj
 es `exceljs`, ya instalado en Bootstrap. El contrato completo está en §5, *Carga masiva — contrato del
 Excel*.
 - `columns.ts`:
-  - `export const COLUMNAS` (las 15 columnas en orden), `CATEGORIAS`, `TIPOS_OPCION`, `TALLAS_ROPA = ["XCH","CH","M","G","EG","EEG"]` y `ETIQUETA_OPCION` (talla_ropa→"Talla", talla_calzado→"Número", contenido_ml→"Contenido", medida→"Medida", unica→"Presentación");
+  - `export const COLUMNAS` (las 15 columnas en orden), `CATEGORIAS`, `TIPOS_OPCION`, `TALLAS_ROPA = ["XCH","CH","M","G","EG","EEG","XS","S","L","XL","XXL"]` y `ETIQUETA_OPCION` (talla_ropa→"Talla", talla_calzado→"Número", contenido_ml→"Contenido", medida→"Medida", unica→"Presentación");
   - `export async function buildPlantilla(): Promise<Buffer>`, que genera con exceljs un libro con las hojas `Instrucciones`, `Productos` (solo la fila de encabezados `COLUMNAS`, fondo `0A0A0A` y texto `F4F4F1`) y `Valores` (listas de categoria, tipo_opcion, solo_terrestre, estado y talla_ropa).
 - `parse.ts`: `export async function leerExcel(buffer: Buffer): Promise<{ encabezados: string[]; filas: { fila: number; valores: Record<string, string> }[] }>`.
   - Lee la hoja `Productos`. Si no existe, lanza `Error("E_EXCEL")`.

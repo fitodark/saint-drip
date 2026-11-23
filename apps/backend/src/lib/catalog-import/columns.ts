@@ -27,7 +27,8 @@ export const TIPOS_OPCION = ["talla_ropa", "talla_calzado", "contenido_ml", "med
 
 export type TipoOpcion = (typeof TIPOS_OPCION)[number]
 
-export const TALLAS_ROPA = ["XCH", "CH", "M", "G", "EG", "EEG"]
+// D25: además de la nomenclatura mexicana, la internacional con la que vende la marca.
+export const TALLAS_ROPA = ["XCH", "CH", "M", "G", "EG", "EEG", "XS", "S", "L", "XL", "XXL"]
 
 export const ETIQUETA_OPCION: Record<TipoOpcion, string> = {
   talla_ropa: "Talla",
@@ -47,7 +48,7 @@ const INSTRUCCIONES = [
   "1. Llena la hoja Productos: una fila por variante, desde la fila 2. No cambies los encabezados ni su orden.",
   "2. Las filas del mismo handle deben repetir titulo, descripcion, categoria, tipo_opcion, solo_terrestre y estado.",
   "3. handle: minúsculas, números y guiones (ej. sd-hoodie-oversize-negro).",
-  "4. tipo_opcion y valor_opcion: talla_ropa (XCH, CH, M, G, EG, EEG) · talla_calzado (22 a 31, pasos de 0.5) · contenido_ml (1 a 1000) · medida (texto de hasta 20 caracteres) · unica (Única).",
+  "4. tipo_opcion y valor_opcion: talla_ropa (XCH, CH, M, G, EG, EEG o XS, S, M, L, XL, XXL) · talla_calzado (22 a 31, pasos de 0.5) · contenido_ml (1 a 1000) · medida (texto de hasta 20 caracteres) · unica (Única).",
   "5. sku: mayúsculas, números y guiones; único en el archivo y en la tienda.",
   "6. precio_mxn con IVA incluido, punto decimal (ej. 1299.00). existencia: entero ≥ 0.",
   "7. peso_g, largo_cm, ancho_cm y alto_cm: enteros mayores que 0 (paquete listo para enviar).",

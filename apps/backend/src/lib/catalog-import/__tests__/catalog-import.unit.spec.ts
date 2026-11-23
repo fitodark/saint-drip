@@ -3,7 +3,7 @@ import path from "path"
 import { buildPlantilla, COLUMNAS } from "../columns"
 import { leerExcel } from "../parse"
 import { emparejarFotos } from "../photos"
-import { validarCatalogo } from "../validate"
+import { validarCatalogo, valorOpcionValido } from "../validate"
 
 const fixture = (nombre: string) => fs.readFileSync(path.join(__dirname, "../__fixtures__", nombre))
 
@@ -11,6 +11,13 @@ const tripletas = (errores: { fila: number; columna: string; codigo: string }[])
   errores.map((e) => [e.fila, e.columna, e.codigo])
 
 describe("carga masiva — librería", () => {
+  it("talla_ropa acepta la nomenclatura mexicana y la internacional (D25)", () => {
+    for (const t of ["XCH", "CH", "M", "G", "EG", "EEG", "XS", "S", "L", "XL", "XXL"]) {
+      expect(valorOpcionValido("talla_ropa", t)).toBe(true)
+    }
+    for (const t of ["XXXL", "s", "Preventa", ""]) expect(valorOpcionValido("talla_ropa", t)).toBe(false)
+  })
+
   it("plantilla-valida.xlsx: cero errores, 3 productos y 8 variantes", async () => {
     const resultado = validarCatalogo(await leerExcel(fixture("plantilla-valida.xlsx")))
 
