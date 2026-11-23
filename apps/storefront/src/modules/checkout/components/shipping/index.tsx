@@ -1,4 +1,6 @@
 "use client"
+
+import { useFocoPaso } from "@lib/hooks/use-foco-paso"
 import { Radio, RadioGroup } from "@headlessui/react"
 import { setShippingMethod } from "@lib/data/cart"
 import { calculatePriceForShippingOption } from "@lib/data/fulfillment"
@@ -68,6 +70,7 @@ const Shipping: React.FC<ShippingProps> = ({
   const pathname = usePathname()
 
   const isOpen = searchParams.get("step") === "delivery"
+  const tituloRef = useFocoPaso(isOpen)
 
   const _shippingMethods = availableShippingMethods?.filter(
     (sm) => (sm as unknown as { service_zone?: { fulfillment_set?: { type?: string; location?: { address: HttpTypes.StoreCartAddress } } } }).service_zone?.fulfillment_set?.type !== "pickup"
@@ -169,6 +172,8 @@ const Shipping: React.FC<ShippingProps> = ({
     <div className="bg-white">
       <div className="flex flex-row items-center justify-between mb-6">
         <Heading
+          ref={tituloRef}
+          tabIndex={-1}
           level="h2"
           className={clx(
             "flex flex-row text-3xl-regular gap-x-2 items-baseline",
@@ -190,7 +195,7 @@ const Shipping: React.FC<ShippingProps> = ({
             <Text>
               <button
                 onClick={handleEdit}
-                className="text-ui-fg-interactive hover:text-ui-fg-interactive-hover"
+                className="text-ui-fg-interactive hover:text-ui-fg-interactive-hover underline underline-offset-2"
                 data-testid="edit-delivery-button"
               >
                 Editar

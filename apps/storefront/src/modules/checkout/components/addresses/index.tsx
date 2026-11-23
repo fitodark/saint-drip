@@ -1,4 +1,6 @@
 "use client"
+
+import { useFocoPaso } from "@lib/hooks/use-foco-paso"
 import { setAddresses } from "@lib/data/cart"
 import useToggleState from "@lib/hooks/use-toggle-state"
 import compareAddresses from "@lib/util/compare-addresses"
@@ -26,6 +28,7 @@ const Addresses = ({
   const pathname = usePathname()
 
   const isOpen = searchParams.get("step") === "address"
+  const tituloRef = useFocoPaso(isOpen)
 
   const { state: sameAsBilling, toggle: toggleSameAsBilling } = useToggleState(
     cart?.shipping_address && cart?.billing_address
@@ -43,6 +46,8 @@ const Addresses = ({
     <div className="bg-white">
       <div className="flex flex-row items-center justify-between mb-6">
         <Heading
+          ref={tituloRef}
+          tabIndex={-1}
           level="h2"
           className="flex flex-row text-3xl-regular gap-x-2 items-baseline"
         >
@@ -53,7 +58,7 @@ const Addresses = ({
           <Text>
             <button
               onClick={handleEdit}
-              className="text-ui-fg-interactive hover:text-ui-fg-interactive-hover"
+              className="text-ui-fg-interactive hover:text-ui-fg-interactive-hover underline underline-offset-2"
               data-testid="edit-address-button"
             >
               Editar

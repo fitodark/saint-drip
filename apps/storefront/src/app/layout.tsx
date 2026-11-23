@@ -19,6 +19,12 @@ export default function RootLayout(props: { children: React.ReactNode }) {
         <link rel="ucp" href="/.well-known/ucp" />
       </head>
       <body className="bg-background text-fg font-sans">
+        <a
+          href="#contenido"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:bg-surface focus:px-4 focus:py-2 focus:text-fg"
+        >
+          Saltar al contenido
+        </a>
         <main className="relative">{props.children}</main>
         <WhatsAppButton />
       </body>

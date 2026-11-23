@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useActionState, useEffect, useMemo } from "react"
+import { nombrePais } from "@lib/util/pais"
 
 import Input from "@modules/common/components/input"
 import NativeSelect from "@modules/common/components/native-select"
@@ -24,7 +25,7 @@ const ProfileBillingAddress: React.FC<MyInformationProps> = ({
         ?.map((region) => {
           return region.countries?.map((country) => ({
             value: country.iso_2,
-            label: country.display_name,
+            label: nombrePais(country.iso_2, country.display_name),
           }))
         })
         .flat() || []

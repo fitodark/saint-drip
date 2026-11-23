@@ -3,7 +3,6 @@ import { listCollections } from "@lib/data/collections";
 import { Text, clx } from "@modules/common/components/ui";
 
 import LocalizedClientLink from "@modules/common/components/localized-client-link";
-import MedusaCTA from "@modules/layout/components/medusa-cta";
 
 export default async function Footer() {
   const [{ collections }, productCategories] = await Promise.all([
@@ -172,7 +171,6 @@ export default async function Footer() {
           <Text className="txt-compact-small">
             © {new Date().getFullYear()} Saint Drip. Todos los derechos reservados.
           </Text>
-          <MedusaCTA />
         </div>
       </div>
     </footer>

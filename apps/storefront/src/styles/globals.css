@@ -22,6 +22,22 @@
   /* a11y (paso 15): el gris muted de @medusajs/ui (#71717A) no llega a 4.5:1 sobre --color-background;
      los componentes del starter que usan text-ui-fg-muted toman el token de §7 (4.86:1). */
   --fg-muted: var(--color-fg-muted);
+  /* a11y (recorrido con teclado): el azul interactivo de @medusajs/ui no llega a 4.5:1 sobre blanco;
+     enlaces y acciones como "Editar" usan el texto de §7 y se distinguen por el subrayado. */
+  --fg-interactive: var(--color-fg);
+  --fg-interactive-hover: var(--color-fg-muted);
+}
+
+/* a11y (recorrido con teclado): foco visible de 2px en todo el sitio. Va con !important porque el starter
+   quita el contorno con outline-none / focus:outline-none en varios controles. */
+:focus-visible {
+  outline: 2px solid var(--color-fg) !important;
+  outline-offset: 2px;
+}
+
+/* Sobre fondos oscuros (menú lateral) el contorno usa el color claro. */
+.foco-claro :focus-visible {
+  outline-color: var(--color-primary-fg) !important;
 }
 
 @media (prefers-reduced-motion: reduce) {
